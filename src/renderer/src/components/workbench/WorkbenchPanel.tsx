@@ -10,6 +10,7 @@ import {
   Users
 } from 'lucide-react'
 import type { TodoItem, TodoStatus, ToolApprovalRequest } from '../../../../shared/types'
+import { useSettingsStore } from '../../store/settings-store'
 import { useConversationStore } from '../../store/conversation-store'
 import { ToolCallCard } from '../tools/ToolCallCard'
 
@@ -27,6 +28,7 @@ export function WorkbenchPanel({ pendingRequests, onApprove, onReject }: Props) 
   const setTodos = useConversationStore((s) => s.setTodos)
   const setAgentTasks = useConversationStore((s) => s.setAgentTasks)
   const saveConversationById = useConversationStore((s) => s.saveConversationById)
+  const mcpServers = useSettingsStore((s) => s.settings.mcpServers)
 
   if (!conversation) {
     return (
@@ -38,6 +40,7 @@ export function WorkbenchPanel({ pendingRequests, onApprove, onReject }: Props) 
 
   const todos = conversation.todos || []
   const agentTasks = conversation.agentTasks || []
+  const enabledMcpServers = mcpServers.filter((server) => server.enabled && server.command.trim())
   const saveSoon = () => window.setTimeout(() => saveConversationById(conversation.id), 0)
   const approvePlan = () => {
     if (!conversation.plan) return
@@ -174,7 +177,18 @@ export function WorkbenchPanel({ pendingRequests, onApprove, onReject }: Props) 
           <Network size={15} />
           <span>MCP</span>
         </div>
-        <div className="workbench-muted">Local stdio MCP servers can be configured in Settings.</div>
+        {enabledMcpServers.length > 0 ? (
+          <div className="mcp-server-list">
+            {enabledMcpServers.map((server) => (
+              <div key={server.id} className="mcp-server-chip">
+                <span>{server.name || server.id}</span>
+                <code>{server.command}</code>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="workbench-muted">Local stdio MCP servers can be configured in Settings.</div>
+        )}
       </section>
     </aside>
   )

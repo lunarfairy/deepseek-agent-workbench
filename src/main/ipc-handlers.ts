@@ -6,7 +6,7 @@ import { loadConversations, saveConversation, deleteConversation } from './servi
 import { runChatStream, setApprovalCallback, resolveToolApproval } from './services/deepseek-service'
 import { cancelCommandRun, runCommandStream } from './services/terminal-service'
 import { discoverMcpTools } from './services/mcp-service'
-import type { McpServerConfig } from '../shared/types'
+import type { ChatStreamContext, McpServerConfig } from '../shared/types'
 
 export function registerIpcHandlers(): void {
   // ---------- Settings ----------
@@ -88,36 +88,39 @@ export function registerIpcHandlers(): void {
   })
 
   // ---------- Chat Streaming via webContents.send ----------
-  ipcMain.handle(IPC.START_CHAT_STREAM, async (event, _conversationId, messages) => {
-    const win = BrowserWindow.fromWebContents(event.sender)
-    if (!win) return
+  ipcMain.handle(
+    IPC.START_CHAT_STREAM,
+    async (event, _conversationId, messages, streamContext?: ChatStreamContext) => {
+      const win = BrowserWindow.fromWebContents(event.sender)
+      if (!win) return
 
-    // Send stream chunks to renderer via IPC events
-    const sendChunk = (chunk: any) => {
-      try {
-        if (!win.isDestroyed()) {
-          win.webContents.send(IPC.STREAM_CHUNK, chunk)
+      // Send stream chunks to renderer via IPC events
+      const sendChunk = (chunk: any) => {
+        try {
+          if (!win.isDestroyed()) {
+            win.webContents.send(IPC.STREAM_CHUNK, chunk)
+          }
+        } catch {
+          // window may be closed
         }
-      } catch {
-        // window may be closed
       }
+
+      // When AI requests tool approval, send the request to renderer
+      setApprovalCallback((req) => {
+        try {
+          if (!win.isDestroyed()) {
+            win.webContents.send(IPC.ON_TOOL_APPROVAL_REQUEST, req)
+          }
+        } catch {
+          // window may be closed
+        }
+      })
+
+      // Run the stream
+      runChatStream(messages, streamContext, sendChunk).catch((err) => {
+        sendChunk({ type: 'error', error: err.message })
+        sendChunk({ type: 'done' })
+      })
     }
-
-    // When AI requests tool approval, send the request to renderer
-    setApprovalCallback((req) => {
-      try {
-        if (!win.isDestroyed()) {
-          win.webContents.send(IPC.ON_TOOL_APPROVAL_REQUEST, req)
-        }
-      } catch {
-        // window may be closed
-      }
-    })
-
-    // Run the stream
-    runChatStream(messages, sendChunk).catch((err) => {
-      sendChunk({ type: 'error', error: err.message })
-      sendChunk({ type: 'done' })
-    })
-  })
+  )
 }

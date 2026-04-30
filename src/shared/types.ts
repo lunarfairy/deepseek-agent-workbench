@@ -57,6 +57,13 @@ export interface AgentTask {
   updatedAt: number
 }
 
+export interface ChatStreamContext {
+  conversationId: string
+  plan?: AgentPlan | null
+  todos?: TodoItem[]
+  agentTasks?: AgentTask[]
+}
+
 export interface WorkbenchStateUpdate {
   plan?: {
     title?: string
@@ -99,6 +106,15 @@ export interface McpServerConfig {
   command: string
   args: string[]
   enabled: boolean
+}
+
+export interface McpToolInfo {
+  serverId: string
+  serverName: string
+  name: string
+  registeredName: string
+  description?: string
+  inputSchema?: Record<string, unknown>
 }
 
 export interface ToolCall {
@@ -333,7 +349,11 @@ export interface ElectronAPI {
   deleteConversation(id: string): Promise<void>
 
   // Chat streaming via MessagePort
-  startChatStream(conversationId: string, messages: ChatMessage[]): Promise<void>
+  startChatStream(
+    conversationId: string,
+    messages: ChatMessage[],
+    context?: ChatStreamContext
+  ): Promise<void>
 
   // Tool approval
   onToolApprovalRequest(callback: (request: ToolApprovalRequest) => void): () => void

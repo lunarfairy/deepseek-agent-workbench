@@ -19,7 +19,8 @@ const api: ElectronAPI = {
   deleteConversation: (id) => ipcRenderer.invoke(IPC.DELETE_CONVERSATION, id),
 
   // Chat streaming
-  startChatStream: (conversationId, messages) => ipcRenderer.invoke(IPC.START_CHAT_STREAM, conversationId, messages),
+  startChatStream: (conversationId, messages, context) =>
+    ipcRenderer.invoke(IPC.START_CHAT_STREAM, conversationId, messages, context),
 
   // Tool approval — main pushes request to renderer via IPC event
   onToolApprovalRequest: (callback) => {

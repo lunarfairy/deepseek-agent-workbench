@@ -1,5 +1,12 @@
 import OpenAI from 'openai'
-import type { AppSettings, CommandRun, StreamChunk, ToolApprovalRequest, ChatMessage } from '../../shared/types'
+import type {
+  AppSettings,
+  ChatMessage,
+  ChatStreamContext,
+  CommandRun,
+  StreamChunk,
+  ToolApprovalRequest
+} from '../../shared/types'
 import { loadSettings } from './settings-store'
 import {
   executeRegisteredTool,
@@ -99,11 +106,16 @@ function buildApiMessages(
   return apiMessages
 }
 
-function buildSystemPrompt(settings: AppSettings): string {
+function buildSystemPrompt(
+  settings: AppSettings,
+  streamContext?: ChatStreamContext,
+  availableToolNames: string[] = []
+): string {
   const enabledProfiles = settings.agentProfiles
     .filter((profile) => profile.enabled)
     .map((profile) => `### ${profile.name} (${profile.role})\n${profile.prompt}`)
     .join('\n\n')
+  const mcpToolNames = availableToolNames.filter((name) => name.startsWith('mcp__'))
 
   return `${settings.systemPrompt}
 
@@ -113,13 +125,21 @@ Agent workbench policy:
 - Use specialist agent profiles when the user asks for planning, review, implementation, MCP, or multi-agent work.
 - Keep structured plan and todo updates concise and implementation-oriented.
 - When plan, todo, or agent task state changes, append one fenced workbench_state JSON block. Use keys "plan", "todos", and "agentTasks". Todo statuses are pending, in_progress, or completed. Agent task statuses are pending, running, completed, failed, or cancelled. Keep prose outside the JSON block.
+- If a draft plan exists and is not approved, do not call tools yet. Ask the user to approve or revise the plan first.
 
 Available agent profiles:
-${enabledProfiles || '(no enabled profiles)'}`
+${enabledProfiles || '(no enabled profiles)'}
+
+Current workbench state:
+${formatWorkbenchContext(streamContext)}
+
+Available MCP tools:
+${mcpToolNames.length > 0 ? mcpToolNames.map((name) => `- ${name}`).join('\n') : '(none discovered)'}`
 }
 
 export async function runChatStream(
   messages: ChatMessage[],
+  streamContext: ChatStreamContext | undefined,
   sendChunk: (chunk: StreamChunk) => void
 ): Promise<void> {
   const settings = loadSettings()
@@ -135,7 +155,16 @@ export async function runChatStream(
     baseURL: 'https://api.deepseek.com'
   })
 
-  const apiMessages = buildApiMessages(messages, buildSystemPrompt(settings), settings.thinkingEnabled)
+  const toolDefinitions = await getToolDefinitions(settings.mcpServers)
+  const apiMessages = buildApiMessages(
+    messages,
+    buildSystemPrompt(
+      settings,
+      streamContext,
+      toolDefinitions.map((tool) => tool.function.name)
+    ),
+    settings.thinkingEnabled
+  )
   let continueLoop = true
 
   // V4 models: deepseek-v4-flash, deepseek-v4-pro
@@ -150,7 +179,7 @@ export async function runChatStream(
       const createParams: any = {
         model,
         messages: apiMessages,
-        tools: getToolDefinitions(),
+        tools: toolDefinitions,
         stream: true
       }
 
@@ -230,6 +259,26 @@ export async function runChatStream(
             }
           })
 
+          if (shouldBlockToolForDraftPlan(settings, streamContext, tc.name)) {
+            const result = 'Tool call blocked because the current plan is still a draft. Ask the user to approve or revise the plan before using tools.'
+            apiMessages.push({
+              role: 'tool' as const,
+              tool_call_id: tc.id,
+              content: result
+            })
+            sendChunk({
+              type: 'tool_result',
+              toolResult: {
+                toolCallId: tc.id,
+                toolName: tc.name,
+                content: result,
+                approved: false,
+                risk: getToolRisk(tc.name)
+              }
+            })
+            continue
+          }
+
           // Request approval from user
           const approved = await waitForApproval(tc.id, tc.name, tc.arguments)
 
@@ -256,6 +305,7 @@ export async function runChatStream(
             try {
               result = await executeRegisteredTool(tc.name, tc.arguments, {
                 workDirectory: settings.workDirectory,
+                mcpServers: settings.mcpServers,
                 terminalTimeoutMs: settings.terminal.timeoutMs,
                 onCommandRun: (run: CommandRun) => {
                   sendChunk({ type: 'command_output', commandRun: run })
@@ -291,4 +341,48 @@ export async function runChatStream(
   }
 
   sendChunk({ type: 'done' })
+}
+
+function formatWorkbenchContext(streamContext?: ChatStreamContext): string {
+  if (!streamContext) return '(no active workbench context)'
+
+  const lines: string[] = []
+  if (streamContext.plan) {
+    lines.push(
+      `Plan: ${streamContext.plan.title} (${streamContext.plan.approved ? 'approved' : 'draft'})`
+    )
+    if (streamContext.plan.summary) lines.push(`Plan summary: ${streamContext.plan.summary}`)
+  } else {
+    lines.push('Plan: none')
+  }
+
+  const todos = streamContext.todos || []
+  if (todos.length > 0) {
+    lines.push('Todos:')
+    for (const todo of todos.slice(0, 20)) {
+      lines.push(`- [${todo.status}] ${todo.content}`)
+    }
+  } else {
+    lines.push('Todos: none')
+  }
+
+  const tasks = streamContext.agentTasks || []
+  if (tasks.length > 0) {
+    lines.push('Agent tasks:')
+    for (const task of tasks.slice(0, 20)) {
+      lines.push(`- [${task.status}] ${task.role}: ${task.title}`)
+    }
+  } else {
+    lines.push('Agent tasks: none')
+  }
+
+  return lines.join('\n')
+}
+
+function shouldBlockToolForDraftPlan(
+  settings: AppSettings,
+  streamContext: ChatStreamContext | undefined,
+  _toolName: string
+): boolean {
+  return Boolean(settings.planFirstEnabled && streamContext?.plan && !streamContext.plan.approved)
 }

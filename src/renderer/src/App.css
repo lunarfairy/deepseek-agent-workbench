@@ -223,6 +223,36 @@ html, body, #root {
   color: var(--red) !important;
 }
 
+.mcp-server-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.mcp-server-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border: 1px solid var(--surface0);
+  border-radius: var(--radius-sm);
+  background: rgba(17, 17, 27, 0.25);
+  padding: 7px 8px;
+}
+
+.mcp-server-chip span {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mcp-server-chip code {
+  color: var(--subtext0);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .status-pill {
   display: inline-flex;
   align-items: center;

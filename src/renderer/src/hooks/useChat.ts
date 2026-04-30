@@ -64,6 +64,14 @@ export function useChat() {
             .filter((m) => m.id !== assistantMsgId)
             .map((m) => (m.id === userMsg.id ? { ...m, content: outgoingContent } : m))
         : []
+      const streamContext = conversation
+        ? {
+            conversationId: conversation.id,
+            plan: conversation.plan,
+            todos: conversation.todos || [],
+            agentTasks: conversation.agentTasks || []
+          }
+        : { conversationId: convId }
 
       // Current tool calls being accumulated
       const currentToolCalls: ToolCall[] = []
@@ -166,7 +174,7 @@ export function useChat() {
 
       // Start stream
       try {
-        await window.api.startChatStream(convId, apiMessages)
+        await window.api.startChatStream(convId, apiMessages, streamContext)
       } catch (err: any) {
         updateMessage(convId!, assistantMsgId, {
           content: `Failed to start stream: ${err.message}`,

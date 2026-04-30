@@ -1,5 +1,5 @@
 import type OpenAI from 'openai'
-import type { CommandRun, ToolName, ToolRisk } from '../../shared/types'
+import type { CommandRun, McpServerConfig, McpToolInfo, ToolName, ToolRisk } from '../../shared/types'
 import {
   applyTextPatch,
   grepFiles,
@@ -11,9 +11,15 @@ import {
   writeFileContent
 } from './file-service'
 import { executeCommand, runCommandStream } from './terminal-service'
+import {
+  callMcpToolByRegisteredName,
+  discoverConfiguredMcpTools,
+  isMcpRegisteredToolName
+} from './mcp-service'
 
 interface ToolContext {
   workDirectory: string
+  mcpServers?: McpServerConfig[]
   onCommandRun?: (run: CommandRun) => void
   terminalTimeoutMs?: number
 }
@@ -156,16 +162,22 @@ const tools: RegisteredTool[] = [
 
 const toolMap = new Map(tools.map((tool) => [tool.name, tool]))
 
-export function getToolDefinitions(): OpenAI.Chat.Completions.ChatCompletionTool[] {
-  return tools.map((tool) => tool.definition)
+export async function getToolDefinitions(
+  mcpServers: McpServerConfig[] = []
+): Promise<OpenAI.Chat.Completions.ChatCompletionTool[]> {
+  const mcpTools = await discoverConfiguredMcpTools(mcpServers)
+  return [...tools.map((tool) => tool.definition), ...mcpTools.map(toMcpToolDefinition)]
 }
 
 export function getToolRisk(name: string): ToolRisk {
-  return toolMap.get(name)?.risk || (name.startsWith('mcp:') ? 'mcp' : 'command')
+  return toolMap.get(name)?.risk || (isMcpRegisteredToolName(name) ? 'mcp' : 'command')
 }
 
 export function getToolSummary(name: string, argsStr: string): string {
   const args = parseToolArgs(argsStr)
+  if (isMcpRegisteredToolName(name)) {
+    return `Call MCP tool ${name} with ${summarizeArgs(args)}`
+  }
   return toolMap.get(name)?.summary(args) || `Run ${name}`
 }
 
@@ -184,11 +196,41 @@ export async function executeRegisteredTool(
 ): Promise<string> {
   const tool = toolMap.get(name)
   if (!tool) {
-    if (name.startsWith('mcp:')) {
-      return `MCP tool ${name} is configured but the stdio runtime is not connected in this build.`
+    if (isMcpRegisteredToolName(name)) {
+      const args = parseToolArgs(argsStr)
+      return callMcpToolByRegisteredName(name, args, context.mcpServers || [])
     }
     throw new Error(`Unknown tool: ${name}`)
   }
   const args = parseToolArgs(argsStr)
   return tool.execute(args, context)
+}
+
+function toMcpToolDefinition(tool: McpToolInfo): OpenAI.Chat.Completions.ChatCompletionTool {
+  return {
+    type: 'function',
+    function: {
+      name: tool.registeredName,
+      description:
+        tool.description ||
+        `Call MCP tool ${tool.name} from local server ${tool.serverName}. User approval is required before execution.`,
+      parameters: normalizeParameters(tool.inputSchema)
+    }
+  }
+}
+
+function normalizeParameters(schema: Record<string, unknown> | undefined): Record<string, unknown> {
+  if (!schema || typeof schema !== 'object') {
+    return {
+      type: 'object',
+      properties: {},
+      additionalProperties: true
+    }
+  }
+  return schema
+}
+
+function summarizeArgs(args: any): string {
+  const text = JSON.stringify(args || {})
+  return text.length > 140 ? `${text.slice(0, 137)}...` : text
 }
