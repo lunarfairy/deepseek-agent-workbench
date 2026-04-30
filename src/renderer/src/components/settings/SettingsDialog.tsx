@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   X,
   Eye,
@@ -9,12 +9,13 @@ import {
   Search,
   Trash2,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  ExternalLink
 } from 'lucide-react'
 import { useSettingsStore } from '../../store/settings-store'
-import { DEFAULT_AGENT_PROFILES, type McpServerConfig } from '../../../../shared/types'
+import { DEFAULT_AGENT_PROFILES, type AppInfo, type McpServerConfig } from '../../../../shared/types'
 import { MODEL_OPTIONS, isKnownModel, supportsThinkingControls } from '../../lib/model-options'
-import { PROJECT_RELEASES_URL } from '../../../../shared/project'
+import { PROJECT_RELEASES_URL, PROJECT_REPOSITORY_URL } from '../../../../shared/project'
 
 interface Props {
   onClose: () => void
@@ -45,9 +46,24 @@ export function SettingsDialog({ onClose }: Props) {
   const [mcpDiscovery, setMcpDiscovery] = useState<Record<string, McpDiscoveryState>>({})
   const [terminalTimeoutMs, setTerminalTimeoutMs] = useState(settings.terminal.timeoutMs)
   const [settingsError, setSettingsError] = useState('')
+  const [appInfo, setAppInfo] = useState<AppInfo | null>(null)
 
   const selectedModel = modelMode === '__custom__' ? customModel.trim() : modelMode
   const isV4Model = supportsThinkingControls(selectedModel)
+
+  useEffect(() => {
+    let mounted = true
+    window.api.getAppInfo()
+      .then((info) => {
+        if (mounted) setAppInfo(info)
+      })
+      .catch(() => {
+        if (mounted) setAppInfo(null)
+      })
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   const handleSave = async () => {
     if (!selectedModel) {
@@ -272,14 +288,34 @@ export function SettingsDialog({ onClose }: Props) {
           <div className="setting-group">
             <div className="setting-label-row">
               <label className="setting-label">Updates</label>
-              <button
-                className="setting-small-btn"
-                onClick={() => window.api.openExternalUrl(PROJECT_RELEASES_URL)}
-                title="Open latest GitHub release"
-              >
-                <RefreshCw size={13} />
-                Check for updates
-              </button>
+              <div className="setting-action-row">
+                <button
+                  className="setting-small-btn"
+                  onClick={() => window.api.openExternalUrl(appInfo?.repositoryUrl || PROJECT_REPOSITORY_URL)}
+                  title="Open GitHub repository"
+                >
+                  <ExternalLink size={13} />
+                  Repository
+                </button>
+                <button
+                  className="setting-small-btn"
+                  onClick={() => window.api.openExternalUrl(appInfo?.releasesUrl || PROJECT_RELEASES_URL)}
+                  title="Open latest GitHub release"
+                >
+                  <RefreshCw size={13} />
+                  Check for updates
+                </button>
+              </div>
+            </div>
+            <div className="setting-info-grid">
+              <div className="setting-info-item">
+                <span>App</span>
+                <strong>{appInfo?.name || 'DeepSeek Agent Workbench'}</strong>
+              </div>
+              <div className="setting-info-item">
+                <span>Current version</span>
+                <strong>{appInfo?.version ? `v${appInfo.version}` : 'Loading...'}</strong>
+              </div>
             </div>
             <div className="setting-hint">
               Opens the latest GitHub release page. Automatic in-app updates are not bundled yet.

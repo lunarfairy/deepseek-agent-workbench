@@ -117,6 +117,13 @@ export interface McpToolInfo {
   inputSchema?: Record<string, unknown>
 }
 
+export interface AppInfo {
+  name: string
+  version: string
+  repositoryUrl: string
+  releasesUrl: string
+}
+
 export interface ToolCall {
   id: string
   type: 'function'
@@ -339,6 +346,9 @@ export interface StreamChunk {
 // ---------- IPC API ----------
 
 export interface ElectronAPI {
+  // App metadata
+  getAppInfo(): Promise<AppInfo>
+
   // Settings
   getSettings(): Promise<AppSettings>
   saveSettings(settings: Partial<AppSettings>): Promise<AppSettings>

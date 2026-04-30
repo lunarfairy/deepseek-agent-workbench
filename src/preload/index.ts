@@ -9,6 +9,9 @@ import type {
 } from '../shared/types'
 
 const api: ElectronAPI = {
+  // App metadata
+  getAppInfo: () => ipcRenderer.invoke(IPC.GET_APP_INFO),
+
   // Settings
   getSettings: () => ipcRenderer.invoke(IPC.GET_SETTINGS),
   saveSettings: (settings) => ipcRenderer.invoke(IPC.SAVE_SETTINGS, settings),

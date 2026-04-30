@@ -1578,6 +1578,44 @@ html, body, #root {
   color: var(--text);
 }
 
+.setting-action-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.setting-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.setting-info-item {
+  border: 1px solid var(--surface0);
+  border-radius: var(--radius-sm);
+  background: rgba(17, 17, 27, 0.28);
+  padding: 8px 10px;
+  min-width: 0;
+}
+
+.setting-info-item span {
+  display: block;
+  color: var(--overlay0);
+  font-size: 11px;
+  margin-bottom: 2px;
+}
+
+.setting-info-item strong {
+  display: block;
+  color: var(--text);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .setting-hint {
   color: var(--overlay0);
   font-size: 12px;

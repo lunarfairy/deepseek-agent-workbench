@@ -1,6 +1,9 @@
 // IPC Channel Constants
 
 export const IPC = {
+  // App metadata
+  GET_APP_INFO: 'get-app-info',
+
   // Settings
   GET_SETTINGS: 'get-settings',
   SAVE_SETTINGS: 'save-settings',

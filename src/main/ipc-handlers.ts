@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow, dialog, shell } from 'electron'
+import { ipcMain, BrowserWindow, dialog, shell, app } from 'electron'
 import { join, isAbsolute } from 'path'
 import { IPC } from '../shared/ipc-channels'
 import { loadSettings, saveSettings } from './services/settings-store'
@@ -7,9 +7,19 @@ import { runChatStream, setApprovalCallback, resolveToolApproval } from './servi
 import { cancelCommandRun, runCommandStream } from './services/terminal-service'
 import { discoverMcpTools } from './services/mcp-service'
 import type { ChatStreamContext, McpServerConfig } from '../shared/types'
-import { PROJECT_REPOSITORY_URL } from '../shared/project'
+import { PROJECT_RELEASES_URL, PROJECT_REPOSITORY_URL } from '../shared/project'
 
 export function registerIpcHandlers(): void {
+  // ---------- App Metadata ----------
+  ipcMain.handle(IPC.GET_APP_INFO, async () => {
+    return {
+      name: app.getName(),
+      version: app.getVersion(),
+      repositoryUrl: PROJECT_REPOSITORY_URL,
+      releasesUrl: PROJECT_RELEASES_URL
+    }
+  })
+
   // ---------- Settings ----------
   ipcMain.handle(IPC.GET_SETTINGS, async () => {
     return loadSettings()
