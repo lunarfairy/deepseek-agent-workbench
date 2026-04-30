@@ -51,7 +51,7 @@ const api: ElectronAPI = {
   },
 
   // MCP
-  discoverMcpTools: (serverId: string) => ipcRenderer.invoke(IPC.DISCOVER_MCP_TOOLS, serverId),
+  discoverMcpTools: (serverId, server) => ipcRenderer.invoke(IPC.DISCOVER_MCP_TOOLS, serverId, server),
 
   // Dialogs
   selectDirectory: () => ipcRenderer.invoke(IPC.SELECT_DIRECTORY),

@@ -142,6 +142,31 @@ html, body, #root {
   margin-bottom: 8px;
 }
 
+.workbench-action-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.workbench-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--surface1);
+  border-radius: var(--radius-sm);
+  background: var(--surface0);
+  color: var(--subtext0);
+  padding: 5px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.workbench-icon-btn:hover {
+  background: var(--surface1);
+  color: var(--text);
+}
+
 .todo-list,
 .agent-task-list,
 .approval-list {
@@ -154,11 +179,18 @@ html, body, #root {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
+  border: none;
+  background: transparent;
   color: var(--subtext0);
   font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
 }
 
 .todo-dot {
+  flex: 0 0 auto;
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -171,6 +203,24 @@ html, body, #root {
 
 .todo-item.completed .todo-dot {
   background: var(--green);
+}
+
+.todo-item svg {
+  flex: 0 0 auto;
+}
+
+.todo-item.completed {
+  color: var(--green);
+}
+
+.agent-task p {
+  color: var(--subtext0);
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+.agent-task-error {
+  color: var(--red) !important;
 }
 
 .status-pill {
@@ -528,6 +578,47 @@ html, body, #root {
   gap: 7px;
 }
 
+.command-run-form {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--surface0);
+}
+
+.command-run-form input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--surface1);
+  border-radius: var(--radius-sm);
+  background: var(--surface0);
+  color: var(--text);
+  padding: 7px 9px;
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 12px;
+  outline: none;
+}
+
+.command-run-form input:focus {
+  border-color: var(--blue);
+}
+
+.command-run-form button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  border: 1px solid var(--surface1);
+  border-radius: var(--radius-sm);
+  background: var(--surface0);
+  color: var(--green);
+  cursor: pointer;
+}
+
+.command-run-form button:disabled {
+  color: var(--overlay0);
+  cursor: not-allowed;
+}
+
 .command-output-body {
   overflow-y: auto;
   padding: 8px 12px;
@@ -579,6 +670,11 @@ html, body, #root {
   border-radius: var(--radius-sm);
   padding: 3px;
   cursor: pointer;
+}
+
+.command-empty {
+  color: var(--overlay0);
+  font-size: 12px;
 }
 
 .message-list {
@@ -1279,6 +1375,19 @@ html, body, #root {
   gap: 8px;
 }
 
+.mcp-server-toolbar,
+.mcp-server-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mcp-server-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
 .agent-profile-header strong {
   color: var(--lavender);
   font-size: 13px;
@@ -1286,6 +1395,33 @@ html, body, #root {
 
 .agent-prompt-textarea {
   min-height: 96px;
+}
+
+.mcp-discovery {
+  border-radius: var(--radius-sm);
+  padding: 7px 8px;
+  font-size: 12px;
+  color: var(--subtext0);
+  background: var(--surface0);
+  word-break: break-word;
+}
+
+.mcp-discovery.success {
+  color: var(--green);
+}
+
+.mcp-discovery.error {
+  color: var(--red);
+}
+
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .setting-label {

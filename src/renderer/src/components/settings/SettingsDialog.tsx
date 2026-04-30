@@ -1,10 +1,15 @@
 import { useState } from 'react'
-import { X, Eye, EyeOff, FolderOpen, RotateCcw, Plus } from 'lucide-react'
+import { X, Eye, EyeOff, FolderOpen, RotateCcw, Plus, Search, Trash2, Loader2 } from 'lucide-react'
 import { useSettingsStore } from '../../store/settings-store'
-import { DEFAULT_AGENT_PROFILES } from '../../../../shared/types'
+import { DEFAULT_AGENT_PROFILES, type McpServerConfig } from '../../../../shared/types'
 
 interface Props {
   onClose: () => void
+}
+
+type McpDiscoveryState = {
+  status: 'idle' | 'loading' | 'success' | 'error'
+  message: string
 }
 
 export function SettingsDialog({ onClose }: Props) {
@@ -22,6 +27,7 @@ export function SettingsDialog({ onClose }: Props) {
   const [agentConcurrency, setAgentConcurrency] = useState(settings.agentConcurrency)
   const [agentProfiles, setAgentProfiles] = useState(settings.agentProfiles)
   const [mcpServers, setMcpServers] = useState(settings.mcpServers)
+  const [mcpDiscovery, setMcpDiscovery] = useState<Record<string, McpDiscoveryState>>({})
   const [terminalTimeoutMs, setTerminalTimeoutMs] = useState(settings.terminal.timeoutMs)
 
   const isV4Model = model.startsWith('deepseek-v4-') || model === 'deepseek-chat' || model === 'deepseek-reasoner'
@@ -66,6 +72,44 @@ export function SettingsDialog({ onClose }: Props) {
         enabled: true
       }
     ])
+  }
+
+  const updateMcpServer = (id: string, updates: Partial<McpServerConfig>) => {
+    setMcpServers((servers) =>
+      servers.map((server) => (server.id === id ? { ...server, ...updates } : server))
+    )
+  }
+
+  const removeMcpServer = (id: string) => {
+    setMcpServers((servers) => servers.filter((server) => server.id !== id))
+    setMcpDiscovery((state) => {
+      const next = { ...state }
+      delete next[id]
+      return next
+    })
+  }
+
+  const testMcpServer = async (server: McpServerConfig) => {
+    if (!server.command.trim()) return
+    setMcpDiscovery((state) => ({
+      ...state,
+      [server.id]: { status: 'loading', message: 'Discovering tools...' }
+    }))
+    try {
+      const tools = await window.api.discoverMcpTools(server.id, { ...server, enabled: true })
+      setMcpDiscovery((state) => ({
+        ...state,
+        [server.id]: {
+          status: 'success',
+          message: tools.length > 0 ? tools.join(', ') : 'No tools discovered'
+        }
+      }))
+    } catch (err: any) {
+      setMcpDiscovery((state) => ({
+        ...state,
+        [server.id]: { status: 'error', message: err?.message || 'Discovery failed' }
+      }))
+    }
   }
 
   return (
@@ -275,62 +319,67 @@ export function SettingsDialog({ onClose }: Props) {
               </button>
             </div>
             {mcpServers.length === 0 && <div className="setting-hint">No MCP servers configured.</div>}
-            {mcpServers.map((server) => (
-              <div key={server.id} className="mcp-server-editor">
-                <label className="setting-toggle">
+            {mcpServers.map((server) => {
+              const discovery = mcpDiscovery[server.id]
+              return (
+                <div key={server.id} className="mcp-server-editor">
+                  <div className="mcp-server-toolbar">
+                    <label className="setting-toggle">
+                      <input
+                        type="checkbox"
+                        checked={server.enabled}
+                        onChange={(e) => updateMcpServer(server.id, { enabled: e.target.checked })}
+                      />
+                      <span>Enabled</span>
+                    </label>
+                    <div className="mcp-server-actions">
+                      <button
+                        className="setting-small-btn"
+                        onClick={() => testMcpServer(server)}
+                        disabled={!server.command.trim() || discovery?.status === 'loading'}
+                        title="Discover tools"
+                      >
+                        {discovery?.status === 'loading' ? (
+                          <Loader2 size={13} className="spin" />
+                        ) : (
+                          <Search size={13} />
+                        )}
+                        Test
+                      </button>
+                      <button
+                        className="setting-small-btn"
+                        onClick={() => removeMcpServer(server.id)}
+                        title="Remove server"
+                      >
+                        <Trash2 size={13} />
+                        Remove
+                      </button>
+                    </div>
+                  </div>
                   <input
-                    type="checkbox"
-                    checked={server.enabled}
-                    onChange={(e) =>
-                      setMcpServers((servers) =>
-                        servers.map((candidate) =>
-                          candidate.id === server.id ? { ...candidate, enabled: e.target.checked } : candidate
-                        )
-                      )
-                    }
+                    className="setting-input"
+                    value={server.name}
+                    onChange={(e) => updateMcpServer(server.id, { name: e.target.value })}
+                    placeholder="Server name"
                   />
-                  <span>Enabled</span>
-                </label>
-                <input
-                  className="setting-input"
-                  value={server.name}
-                  onChange={(e) =>
-                    setMcpServers((servers) =>
-                      servers.map((candidate) =>
-                        candidate.id === server.id ? { ...candidate, name: e.target.value } : candidate
-                      )
-                    )
-                  }
-                  placeholder="Server name"
-                />
-                <input
-                  className="setting-input"
-                  value={server.command}
-                  onChange={(e) =>
-                    setMcpServers((servers) =>
-                      servers.map((candidate) =>
-                        candidate.id === server.id ? { ...candidate, command: e.target.value } : candidate
-                      )
-                    )
-                  }
-                  placeholder="Command"
-                />
-                <input
-                  className="setting-input"
-                  value={server.args.join(' ')}
-                  onChange={(e) =>
-                    setMcpServers((servers) =>
-                      servers.map((candidate) =>
-                        candidate.id === server.id
-                          ? { ...candidate, args: e.target.value.split(' ').filter(Boolean) }
-                          : candidate
-                      )
-                    )
-                  }
-                  placeholder="Args separated by spaces"
-                />
-              </div>
-            ))}
+                  <input
+                    className="setting-input"
+                    value={server.command}
+                    onChange={(e) => updateMcpServer(server.id, { command: e.target.value })}
+                    placeholder="Command"
+                  />
+                  <input
+                    className="setting-input"
+                    value={server.args.join(' ')}
+                    onChange={(e) => updateMcpServer(server.id, { args: splitCommandArgs(e.target.value) })}
+                    placeholder="Args separated by spaces"
+                  />
+                  {discovery && (
+                    <div className={`mcp-discovery ${discovery.status}`}>{discovery.message}</div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
 
@@ -345,4 +394,9 @@ export function SettingsDialog({ onClose }: Props) {
       </div>
     </div>
   )
+}
+
+function splitCommandArgs(input: string): string[] {
+  const matches = input.match(/"([^"]*)"|'([^']*)'|\S+/g) || []
+  return matches.map((value) => value.replace(/^['"]|['"]$/g, '')).filter(Boolean)
 }

@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { v4 as uuid } from 'uuid'
 import type { AgentRole, ChatMessage, StreamChunk, ToolCall } from '../../../shared/types'
+import { parseWorkbenchState } from '../lib/workbench-state'
 import { useConversationStore } from '../store/conversation-store'
 
 export function useChat() {
@@ -13,6 +14,7 @@ export function useChat() {
     setStreaming,
     setPlan,
     setTodos,
+    setAgentTasks,
     upsertAgentTask,
     upsertCommandRun,
     createConversation
@@ -129,16 +131,30 @@ export function useChat() {
             break
 
           case 'done':
-            const finalState = useConversationStore.getState()
-            const finalConv = finalState.conversations.find((c) => c.id === convId)
-            const finalMsg = finalConv?.messages.find((m) => m.id === assistantMsgId)
-            if (currentToolCalls.length > 0 || (finalMsg?.toolCalls && finalMsg.toolCalls.length > 0)) {
+            {
+              const finalState = useConversationStore.getState()
+              const finalConv = finalState.conversations.find((c) => c.id === convId)
+              const finalMsg = finalConv?.messages.find((m) => m.id === assistantMsgId)
+              const parsed = finalMsg
+                ? parseWorkbenchState(finalMsg.content, {
+                    plan: finalConv?.plan,
+                    todos: finalConv?.todos,
+                    agentTasks: finalConv?.agentTasks
+                  })
+                : null
+              const toolCalls = mergeToolCalls(finalMsg?.toolCalls || [], currentToolCalls.splice(0))
+
               updateMessage(convId!, assistantMsgId, {
-                toolCalls: [...(finalMsg?.toolCalls || []), ...currentToolCalls.splice(0)],
+                ...(parsed?.found ? { content: parsed.content } : {}),
+                ...(toolCalls.length > 0 ? { toolCalls } : {}),
                 isStreaming: false
               })
-            } else {
-              updateMessage(convId!, assistantMsgId, { isStreaming: false })
+
+              if (parsed?.found) {
+                if (parsed.plan) setPlan(convId!, parsed.plan)
+                if (parsed.todos) setTodos(convId!, parsed.todos)
+                if (parsed.agentTasks) setAgentTasks(convId!, parsed.agentTasks)
+              }
             }
             setStreaming(false)
             // Save conversation
@@ -160,10 +176,33 @@ export function useChat() {
         cleanup()
       }
     },
-    [activeConversationId, isStreaming]
+    [
+      activeConversationId,
+      isStreaming,
+      addMessage,
+      appendToMessage,
+      createConversation,
+      setAgentTasks,
+      setPlan,
+      setStreaming,
+      setTodos,
+      upsertAgentTask,
+      upsertCommandRun,
+      updateMessage
+    ]
   )
 
   return { sendMessage, isStreaming }
+}
+
+function mergeToolCalls(existing: ToolCall[], pending: ToolCall[]): ToolCall[] {
+  const merged = [...existing]
+  for (const toolCall of pending) {
+    if (!merged.some((candidate) => candidate.id === toolCall.id)) {
+      merged.push(toolCall)
+    }
+  }
+  return merged
 }
 
 function prepareWorkbenchCommand(

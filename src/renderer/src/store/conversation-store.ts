@@ -19,6 +19,7 @@ interface ConversationState {
   upsertAgentTask: (conversationId: string, task: AgentTask) => void
   setPlan: (conversationId: string, plan: AgentPlan | null) => void
   setTodos: (conversationId: string, todos: TodoItem[]) => void
+  setAgentTasks: (conversationId: string, agentTasks: AgentTask[]) => void
   setStreaming: (streaming: boolean) => void
   getActiveConversation: () => Conversation | undefined
   saveConversationById: (conversationId: string) => Promise<void>
@@ -166,6 +167,10 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
 
   setTodos: (conversationId, todos) => {
     get().updateConversationMeta(conversationId, { todos })
+  },
+
+  setAgentTasks: (conversationId, agentTasks) => {
+    get().updateConversationMeta(conversationId, { agentTasks })
   },
 
   setStreaming: (streaming) => {

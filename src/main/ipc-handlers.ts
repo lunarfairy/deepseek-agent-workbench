@@ -6,6 +6,7 @@ import { loadConversations, saveConversation, deleteConversation } from './servi
 import { runChatStream, setApprovalCallback, resolveToolApproval } from './services/deepseek-service'
 import { cancelCommandRun, runCommandStream } from './services/terminal-service'
 import { discoverMcpTools } from './services/mcp-service'
+import type { McpServerConfig } from '../shared/types'
 
 export function registerIpcHandlers(): void {
   // ---------- Settings ----------
@@ -78,9 +79,12 @@ export function registerIpcHandlers(): void {
   })
 
   // ---------- MCP ----------
-  ipcMain.handle(IPC.DISCOVER_MCP_TOOLS, async (_, serverId: string) => {
+  ipcMain.handle(IPC.DISCOVER_MCP_TOOLS, async (_, serverId: string, serverOverride?: McpServerConfig) => {
     const settings = loadSettings()
-    return discoverMcpTools(serverId, settings.mcpServers)
+    return discoverMcpTools(
+      serverId,
+      serverOverride ? [{ ...serverOverride, enabled: true }] : settings.mcpServers
+    )
   })
 
   // ---------- Chat Streaming via webContents.send ----------

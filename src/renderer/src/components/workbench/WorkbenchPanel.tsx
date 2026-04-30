@@ -1,5 +1,15 @@
-import { CheckSquare, ClipboardList, Network, ShieldCheck, Users } from 'lucide-react'
-import type { ToolApprovalRequest } from '../../../../shared/types'
+import {
+  CheckCircle2,
+  CheckSquare,
+  ClipboardList,
+  Network,
+  PlayCircle,
+  RotateCcw,
+  ShieldCheck,
+  ThumbsUp,
+  Users
+} from 'lucide-react'
+import type { TodoItem, TodoStatus, ToolApprovalRequest } from '../../../../shared/types'
 import { useConversationStore } from '../../store/conversation-store'
 import { ToolCallCard } from '../tools/ToolCallCard'
 
@@ -13,6 +23,10 @@ export function WorkbenchPanel({ pendingRequests, onApprove, onReject }: Props) 
   const conversation = useConversationStore((s) =>
     s.conversations.find((c) => c.id === s.activeConversationId)
   )
+  const setPlan = useConversationStore((s) => s.setPlan)
+  const setTodos = useConversationStore((s) => s.setTodos)
+  const setAgentTasks = useConversationStore((s) => s.setAgentTasks)
+  const saveConversationById = useConversationStore((s) => s.saveConversationById)
 
   if (!conversation) {
     return (
@@ -24,6 +38,32 @@ export function WorkbenchPanel({ pendingRequests, onApprove, onReject }: Props) 
 
   const todos = conversation.todos || []
   const agentTasks = conversation.agentTasks || []
+  const saveSoon = () => window.setTimeout(() => saveConversationById(conversation.id), 0)
+  const approvePlan = () => {
+    if (!conversation.plan) return
+    setPlan(conversation.id, { ...conversation.plan, approved: true, updatedAt: Date.now() })
+    saveSoon()
+  }
+  const resetPlan = () => {
+    setPlan(conversation.id, null)
+    setTodos(conversation.id, [])
+    setAgentTasks(conversation.id, [])
+    saveSoon()
+  }
+  const cycleTodo = (todo: TodoItem) => {
+    const next: Record<TodoStatus, TodoStatus> = {
+      pending: 'in_progress',
+      in_progress: 'completed',
+      completed: 'pending'
+    }
+    setTodos(
+      conversation.id,
+      todos.map((candidate) =>
+        candidate.id === todo.id ? { ...candidate, status: next[candidate.status] } : candidate
+      )
+    )
+    saveSoon()
+  }
 
   return (
     <aside className="workbench-panel">
@@ -39,6 +79,18 @@ export function WorkbenchPanel({ pendingRequests, onApprove, onReject }: Props) 
             <span className={conversation.plan.approved ? 'status-pill completed' : 'status-pill'}>
               {conversation.plan.approved ? 'Approved' : 'Draft'}
             </span>
+            <div className="workbench-action-row">
+              {!conversation.plan.approved && (
+                <button className="workbench-icon-btn" onClick={approvePlan} title="Approve plan">
+                  <ThumbsUp size={13} />
+                  Approve
+                </button>
+              )}
+              <button className="workbench-icon-btn" onClick={resetPlan} title="Reset plan">
+                <RotateCcw size={13} />
+                Reset
+              </button>
+            </div>
           </div>
         ) : (
           <div className="workbench-muted">Use /plan to ask the Coordinator for a plan.</div>
@@ -53,10 +105,21 @@ export function WorkbenchPanel({ pendingRequests, onApprove, onReject }: Props) 
         {todos.length > 0 ? (
           <div className="todo-list">
             {todos.map((todo) => (
-              <div key={todo.id} className={`todo-item ${todo.status}`}>
-                <span className="todo-dot" />
+              <button
+                key={todo.id}
+                className={`todo-item ${todo.status}`}
+                onClick={() => cycleTodo(todo)}
+                title="Advance todo status"
+              >
+                {todo.status === 'completed' ? (
+                  <CheckCircle2 size={14} />
+                ) : todo.status === 'in_progress' ? (
+                  <PlayCircle size={14} />
+                ) : (
+                  <span className="todo-dot" />
+                )}
                 <span>{todo.content}</span>
-              </div>
+              </button>
             ))}
           </div>
         ) : (
@@ -75,6 +138,8 @@ export function WorkbenchPanel({ pendingRequests, onApprove, onReject }: Props) 
               <div key={task.id} className="agent-task">
                 <span className={`status-pill ${task.status}`}>{task.role}</span>
                 <strong>{task.title}</strong>
+                {task.result && <p>{task.result}</p>}
+                {task.error && <p className="agent-task-error">{task.error}</p>}
               </div>
             ))}
           </div>

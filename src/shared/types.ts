@@ -57,6 +57,30 @@ export interface AgentTask {
   updatedAt: number
 }
 
+export interface WorkbenchStateUpdate {
+  plan?: {
+    title?: string
+    summary?: string
+    approved?: boolean
+  }
+  todos?: Array<
+    | string
+    | {
+        id?: string
+        content: string
+        status?: TodoStatus | string
+      }
+  >
+  agentTasks?: Array<{
+    id?: string
+    role: AgentRole | string
+    title: string
+    status?: AgentTaskStatus | string
+    result?: string
+    error?: string
+  }>
+}
+
 export interface CommandRun {
   id: string
   command: string
@@ -205,7 +229,16 @@ export const DEFAULT_SETTINGS: AppSettings = {
 - Work in Plan-first mode with specialist agent profiles
 - Use configured local MCP tools
 
-Always ask for user approval before performing file operations or running commands. Be concise and helpful.`
+Always ask for user approval before performing file operations or running commands. Be concise and helpful.
+
+When you create or update a plan, todo list, or agent task list, append one fenced block with language workbench_state. The block must contain JSON matching:
+{
+  "plan": { "title": "short title", "summary": "short summary", "approved": false },
+  "todos": [{ "content": "step", "status": "pending" }],
+  "agentTasks": [{ "role": "explorer", "title": "inspect files", "status": "pending" }]
+}
+Todo statuses are pending, in_progress, or completed. Agent task statuses are pending, running, completed, failed, or cancelled.
+Keep the JSON concise. Do not put prose inside the JSON block.`
 }
 
 // ---------- Tool Definitions ----------
@@ -312,7 +345,7 @@ export interface ElectronAPI {
   onCommandRun(callback: (run: CommandRun) => void): () => void
 
   // MCP
-  discoverMcpTools(serverId: string): Promise<string[]>
+  discoverMcpTools(serverId: string, server?: McpServerConfig): Promise<string[]>
 
   // Dialogs
   selectDirectory(): Promise<string | null>

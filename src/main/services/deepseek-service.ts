@@ -112,6 +112,7 @@ Agent workbench policy:
 - All tool calls require explicit user approval.
 - Use specialist agent profiles when the user asks for planning, review, implementation, MCP, or multi-agent work.
 - Keep structured plan and todo updates concise and implementation-oriented.
+- When plan, todo, or agent task state changes, append one fenced workbench_state JSON block. Use keys "plan", "todos", and "agentTasks". Todo statuses are pending, in_progress, or completed. Agent task statuses are pending, running, completed, failed, or cancelled. Keep prose outside the JSON block.
 
 Available agent profiles:
 ${enabledProfiles || '(no enabled profiles)'}`
