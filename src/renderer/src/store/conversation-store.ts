@@ -1,6 +1,14 @@
 import { create } from 'zustand'
 import { v4 as uuid } from 'uuid'
-import type { AgentPlan, AgentTask, ChatMessage, CommandRun, Conversation, TodoItem } from '../../../shared/types'
+import type {
+  AgentPlan,
+  AgentTask,
+  AgentTaskStatus,
+  ChatMessage,
+  CommandRun,
+  Conversation,
+  TodoItem
+} from '../../../shared/types'
 
 interface ConversationState {
   conversations: Conversation[]
@@ -17,6 +25,8 @@ interface ConversationState {
   updateConversationMeta: (conversationId: string, updates: Partial<Pick<Conversation, 'plan' | 'todos' | 'agentTasks' | 'commandRuns'>>) => void
   upsertCommandRun: (conversationId: string, run: CommandRun) => void
   upsertAgentTask: (conversationId: string, task: AgentTask) => void
+  updateAgentTask: (conversationId: string, taskId: string, updates: Partial<AgentTask>) => void
+  updateAgentTaskStatus: (conversationId: string, taskId: string, status: AgentTaskStatus) => void
   setPlan: (conversationId: string, plan: AgentPlan | null) => void
   setTodos: (conversationId: string, todos: TodoItem[]) => void
   setAgentTasks: (conversationId: string, agentTasks: AgentTask[]) => void
@@ -159,6 +169,30 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
         }
       })
     }))
+  },
+
+  updateAgentTask: (conversationId, taskId, updates) => {
+    set((state) => ({
+      conversations: state.conversations.map((c) => {
+        if (c.id !== conversationId) return c
+        return {
+          ...c,
+          agentTasks: (c.agentTasks || []).map((task) =>
+            task.id === taskId ? { ...task, ...updates, updatedAt: Date.now() } : task
+          ),
+          updatedAt: Date.now()
+        }
+      })
+    }))
+  },
+
+  updateAgentTaskStatus: (conversationId, taskId, status) => {
+    get().updateAgentTask(conversationId, taskId, {
+      status,
+      ...(status === 'running' ? { error: undefined } : {}),
+      ...(status === 'completed' ? { result: 'Marked complete in the workbench.', error: undefined } : {}),
+      ...(status === 'failed' ? { error: 'Marked failed in the workbench.' } : {})
+    })
   },
 
   setPlan: (conversationId, plan) => {

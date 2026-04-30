@@ -148,7 +148,9 @@ function withMcpSession<T>(
     }
 
     const writeMessage = (message: Record<string, unknown>) => {
-      proc.stdin.write(`${JSON.stringify(message)}\n`)
+      const body = JSON.stringify(message)
+      const byteLength = Buffer.byteLength(body, 'utf8')
+      proc.stdin.write(`Content-Length: ${byteLength}\r\n\r\n${body}`)
     }
 
     const session: McpSession = {

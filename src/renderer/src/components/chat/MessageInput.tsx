@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 const SLASH_COMMANDS = [
   { name: '/plan', description: 'Ask the Coordinator to draft a plan first' },
   { name: '/agents', description: 'Create specialist agent tasks for this request' },
+  { name: '/agent', description: 'Create one role task: /agent reviewer check changes' },
   { name: '/mcp', description: 'List MCP setup guidance' },
   { name: '/terminal', description: 'Ask for a command-oriented workflow' },
   { name: '/workdir', description: 'Inspect or change the active workspace' },

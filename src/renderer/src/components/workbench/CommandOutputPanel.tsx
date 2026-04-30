@@ -10,6 +10,7 @@ export function CommandOutputPanel() {
   const upsertCommandRun = useConversationStore((s) => s.upsertCommandRun)
   const saveConversationById = useConversationStore((s) => s.saveConversationById)
   const [command, setCommand] = useState('')
+  const [pendingCommand, setPendingCommand] = useState('')
   const runs = conversation?.commandRuns || []
   const latestRuns = runs.slice(-3).reverse()
 
@@ -29,6 +30,13 @@ export function CommandOutputPanel() {
     event.preventDefault()
     const trimmed = command.trim()
     if (!trimmed) return
+
+    if (pendingCommand !== trimmed) {
+      setPendingCommand(trimmed)
+      return
+    }
+
+    setPendingCommand('')
     setCommand('')
     try {
       const run = await window.api.runCommand(trimmed)
@@ -62,13 +70,24 @@ export function CommandOutputPanel() {
       <form className="command-run-form" onSubmit={runCommand}>
         <input
           value={command}
-          onChange={(event) => setCommand(event.target.value)}
+          onChange={(event) => {
+            setCommand(event.target.value)
+            if (pendingCommand && event.target.value.trim() !== pendingCommand) {
+              setPendingCommand('')
+            }
+          }}
           placeholder="Run a command..."
         />
         <button type="submit" disabled={!command.trim()} title="Run command">
           <Play size={13} />
+          <span>{pendingCommand === command.trim() ? 'Confirm' : 'Run'}</span>
         </button>
       </form>
+      {pendingCommand && (
+        <div className="command-confirm">
+          Confirm command execution: <code>{pendingCommand}</code>
+        </div>
+      )}
       <div className="command-output-body">
         {latestRuns.length > 0 ? (
           latestRuns.map((run) => (

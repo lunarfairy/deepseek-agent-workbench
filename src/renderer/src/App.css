@@ -223,6 +223,66 @@ html, body, #root {
   color: var(--red) !important;
 }
 
+.agent-task {
+  border: 1px solid var(--surface0);
+  border-radius: var(--radius-sm);
+  background: rgba(17, 17, 27, 0.18);
+  padding: 8px;
+}
+
+.agent-task-header,
+.agent-task-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.agent-task-header {
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.agent-task-status {
+  color: var(--overlay0);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.agent-task-status.running {
+  color: var(--yellow);
+}
+
+.agent-task-status.completed {
+  color: var(--green);
+}
+
+.agent-task-status.failed,
+.agent-task-status.cancelled {
+  color: var(--red);
+}
+
+.agent-task-actions {
+  margin-top: 8px;
+}
+
+.agent-task-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--surface1);
+  border-radius: var(--radius-sm);
+  background: var(--surface0);
+  color: var(--subtext0);
+  width: 26px;
+  height: 24px;
+  cursor: pointer;
+}
+
+.agent-task-actions button:hover {
+  color: var(--text);
+  background: var(--surface1);
+}
+
 .mcp-server-list {
   display: flex;
   flex-direction: column;
@@ -636,17 +696,31 @@ html, body, #root {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
+  gap: 5px;
+  min-width: 72px;
   border: 1px solid var(--surface1);
   border-radius: var(--radius-sm);
   background: var(--surface0);
   color: var(--green);
   cursor: pointer;
+  font-size: 12px;
 }
 
 .command-run-form button:disabled {
   color: var(--overlay0);
   cursor: not-allowed;
+}
+
+.command-confirm {
+  padding: 0 12px 8px;
+  color: var(--yellow);
+  font-size: 12px;
+  border-bottom: 1px solid var(--surface0);
+}
+
+.command-confirm code {
+  color: var(--text);
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
 }
 
 .command-output-body {

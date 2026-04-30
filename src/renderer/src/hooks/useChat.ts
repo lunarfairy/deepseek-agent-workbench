@@ -244,7 +244,7 @@ function prepareWorkbenchCommand(
   }
 
   if (command === '/agents') {
-    const roles: AgentRole[] = ['explorer', 'implementer', 'reviewer', 'integrator']
+    const roles: AgentRole[] = ['coordinator', 'explorer', 'implementer', 'reviewer', 'integrator']
     const title = request || 'Coordinate specialist agents'
     const now = Date.now()
     roles.forEach((role) => {
@@ -257,7 +257,26 @@ function prepareWorkbenchCommand(
         updatedAt: now
       })
     })
-    return `Use the Coordinator profile to split this request across Explorer, Implementer, Reviewer, and Integrator roles: ${title}. Summarize each role's prompt and expected output.`
+    return `Use the Coordinator profile to split this request across Coordinator, Explorer, Implementer, Reviewer, and Integrator roles: ${title}. Summarize each role's prompt and expected output.`
+  }
+
+  if (command === '/agent') {
+    const [roleText, ...taskParts] = rest
+    const role = normalizeAgentRole(roleText)
+    const title = taskParts.join(' ').trim() || request || 'Focused agent task'
+    if (!role) {
+      return 'Show how to use /agent with one of these roles: coordinator, explorer, implementer, reviewer, integrator, mcp.'
+    }
+    const now = Date.now()
+    actions.upsertAgentTask(conversationId, {
+      id: uuid(),
+      role,
+      title: `${role}: ${title}`,
+      status: 'pending',
+      createdAt: now,
+      updatedAt: now
+    })
+    return `Use the ${role} agent profile for this focused task: ${title}. Return concise findings or next steps, and include a workbench_state update for this agent task.`
   }
 
   if (command === '/help') {
@@ -281,4 +300,20 @@ function prepareWorkbenchCommand(
   }
 
   return raw
+}
+
+function normalizeAgentRole(value: string | undefined): AgentRole | null {
+  if (!value) return null
+  const normalized = value.toLowerCase().trim()
+  if (
+    normalized === 'coordinator' ||
+    normalized === 'explorer' ||
+    normalized === 'implementer' ||
+    normalized === 'reviewer' ||
+    normalized === 'integrator' ||
+    normalized === 'mcp'
+  ) {
+    return normalized
+  }
+  return null
 }

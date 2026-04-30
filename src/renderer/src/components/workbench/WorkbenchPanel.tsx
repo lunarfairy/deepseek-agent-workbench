@@ -7,9 +7,16 @@ import {
   RotateCcw,
   ShieldCheck,
   ThumbsUp,
-  Users
+  Users,
+  XCircle
 } from 'lucide-react'
-import type { TodoItem, TodoStatus, ToolApprovalRequest } from '../../../../shared/types'
+import type {
+  AgentTask,
+  AgentTaskStatus,
+  TodoItem,
+  TodoStatus,
+  ToolApprovalRequest
+} from '../../../../shared/types'
 import { useSettingsStore } from '../../store/settings-store'
 import { useConversationStore } from '../../store/conversation-store'
 import { ToolCallCard } from '../tools/ToolCallCard'
@@ -27,6 +34,7 @@ export function WorkbenchPanel({ pendingRequests, onApprove, onReject }: Props) 
   const setPlan = useConversationStore((s) => s.setPlan)
   const setTodos = useConversationStore((s) => s.setTodos)
   const setAgentTasks = useConversationStore((s) => s.setAgentTasks)
+  const updateAgentTaskStatus = useConversationStore((s) => s.updateAgentTaskStatus)
   const saveConversationById = useConversationStore((s) => s.saveConversationById)
   const mcpServers = useSettingsStore((s) => s.settings.mcpServers)
 
@@ -65,6 +73,10 @@ export function WorkbenchPanel({ pendingRequests, onApprove, onReject }: Props) 
         candidate.id === todo.id ? { ...candidate, status: next[candidate.status] } : candidate
       )
     )
+    saveSoon()
+  }
+  const setTaskStatus = (task: AgentTask, status: AgentTaskStatus) => {
+    updateAgentTaskStatus(conversation.id, task.id, status)
     saveSoon()
   }
 
@@ -139,10 +151,27 @@ export function WorkbenchPanel({ pendingRequests, onApprove, onReject }: Props) 
           <div className="agent-task-list">
             {agentTasks.map((task) => (
               <div key={task.id} className="agent-task">
-                <span className={`status-pill ${task.status}`}>{task.role}</span>
+                <div className="agent-task-header">
+                  <span className={`status-pill ${task.status}`}>{task.role}</span>
+                  <span className={`agent-task-status ${task.status}`}>{task.status}</span>
+                </div>
                 <strong>{task.title}</strong>
                 {task.result && <p>{task.result}</p>}
                 {task.error && <p className="agent-task-error">{task.error}</p>}
+                <div className="agent-task-actions">
+                  <button onClick={() => setTaskStatus(task, 'running')} title="Mark running">
+                    <PlayCircle size={12} />
+                  </button>
+                  <button onClick={() => setTaskStatus(task, 'completed')} title="Mark complete">
+                    <CheckCircle2 size={12} />
+                  </button>
+                  <button onClick={() => setTaskStatus(task, 'failed')} title="Mark failed">
+                    <XCircle size={12} />
+                  </button>
+                  <button onClick={() => setTaskStatus(task, 'pending')} title="Reset task">
+                    <RotateCcw size={12} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
