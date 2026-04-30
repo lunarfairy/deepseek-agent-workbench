@@ -64,6 +64,25 @@ Build the app:
 npm run build
 ```
 
+Build a Windows `.exe` installer:
+
+```powershell
+.\build-exe.cmd
+```
+
+You can also run the same flow through npm:
+
+```powershell
+npm run build:exe
+```
+
+The generated files are written to:
+
+- Installer: `dist\DeepSeek-Agent-Workbench-Setup-1.0.0.exe`
+- Unpacked app: `dist\win-unpacked\DeepSeek Agent Workbench.exe`
+
+The installer is unsigned, so Windows may show a security warning.
+
 ## Notes
 
 - Configure your API key and working directory inside the app.
