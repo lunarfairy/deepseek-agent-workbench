@@ -2,7 +2,7 @@
 
 Lunar Agent Workbench is a local Electron coding assistant built around plan-first workflows, explicit tool approval, specialist agent profiles, and MCP-style tool extension.
 
-It is a clean-room project inspired by modern agentic coding workbenches. It does not copy Claude Code, Codex, or other proprietary assistant source code, and it is not an official DeepSeek, Anthropic, or OpenAI product.
+It is a clean-room project inspired by modern agentic coding workbenches. It is not an official DeepSeek, Anthropic, or OpenAI product.
 
 ## Features
 
