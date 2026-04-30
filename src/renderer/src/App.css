@@ -1561,6 +1561,11 @@ html, body, #root {
   font-size: 12px;
 }
 
+.setting-error {
+  color: var(--red);
+  font-size: 12px;
+}
+
 .agent-profile-editor,
 .mcp-server-editor {
   display: flex;
@@ -1838,6 +1843,12 @@ select.setting-input {
   color: var(--red);
   font-size: 13px;
   margin-bottom: 8px;
+}
+
+.welcome-model-custom-row {
+  width: 100%;
+  max-width: 440px;
+  margin-bottom: 12px;
 }
 
 .welcome-model-grid {

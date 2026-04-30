@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Eye, EyeOff, FolderOpen, ChevronRight } from 'lucide-react'
 import { useSettingsStore } from '../../store/settings-store'
+import { MODEL_OPTIONS, supportsThinkingControls } from '../../lib/model-options'
 
 interface Props {
   onComplete: () => void
@@ -11,14 +12,16 @@ export function WelcomeSetup({ onComplete }: Props) {
 
   const [step, setStep] = useState(0) // 0=welcome, 1=apikey, 2=model, 3=workdir
   const [apiKey, setApiKey] = useState('')
-  const [model, setModel] = useState('deepseek-v4-flash')
+  const [modelMode, setModelMode] = useState('deepseek-v4-flash')
+  const [customModel, setCustomModel] = useState('')
   const [workDir, setWorkDir] = useState('')
   const [showKey, setShowKey] = useState(false)
   const [error, setError] = useState('')
   const [reasoningEffort, setReasoningEffort] = useState<'high' | 'max'>('high')
   const [thinkingEnabled, setThinkingEnabled] = useState(true)
 
-  const isV4Model = model.startsWith('deepseek-v4-') || model === 'deepseek-chat' || model === 'deepseek-reasoner'
+  const selectedModel = modelMode === '__custom__' ? customModel.trim() : modelMode
+  const isV4Model = supportsThinkingControls(selectedModel)
 
   const handleSelectDir = async () => {
     const dir = await window.api.selectDirectory()
@@ -30,9 +33,14 @@ export function WelcomeSetup({ onComplete }: Props) {
       setError('API Key is required')
       return
     }
+    if (!selectedModel) {
+      setError('Model name is required')
+      setStep(2)
+      return
+    }
     await updateSettings({
       apiKey: apiKey.trim(),
-      model,
+      model: selectedModel,
       workDirectory: workDir,
       reasoningEffort,
       thinkingEnabled
@@ -106,25 +114,43 @@ export function WelcomeSetup({ onComplete }: Props) {
               Select the DeepSeek model you'd like to use. You can change this later.
             </p>
             <div className="welcome-model-grid">
-              {[
-                { id: 'deepseek-v4-flash', name: 'V4 Flash', desc: 'Fast & capable, great for most tasks', tag: 'Recommended' },
-                { id: 'deepseek-v4-pro', name: 'V4 Pro', desc: 'Most powerful, flagship model', tag: 'Pro' },
-                { id: 'deepseek-chat', name: 'Chat V3', desc: 'General-purpose, fast & versatile', tag: 'Legacy' },
-                { id: 'deepseek-reasoner', name: 'Reasoner R1', desc: 'Deep reasoning for complex tasks', tag: 'Legacy' },
-              ].map((m) => (
+              {MODEL_OPTIONS.map((m) => (
                 <div
                   key={m.id}
-                  className={`welcome-model-card ${model === m.id ? 'active' : ''}`}
-                  onClick={() => setModel(m.id)}
+                  className={`welcome-model-card ${modelMode === m.id ? 'active' : ''}`}
+                  onClick={() => { setModelMode(m.id); setError('') }}
                 >
                   <div className="welcome-model-name">
                     {m.name}
                     {m.tag && <span className="welcome-model-tag">{m.tag}</span>}
                   </div>
-                  <div className="welcome-model-desc">{m.desc}</div>
+                  <div className="welcome-model-desc">{m.description}</div>
                 </div>
               ))}
+              <div
+                className={`welcome-model-card ${modelMode === '__custom__' ? 'active' : ''}`}
+                onClick={() => { setModelMode('__custom__'); setError('') }}
+              >
+                <div className="welcome-model-name">
+                  Custom
+                  <span className="welcome-model-tag">Manual</span>
+                </div>
+                <div className="welcome-model-desc">Use any DeepSeek-compatible model name</div>
+              </div>
             </div>
+            {modelMode === '__custom__' && (
+              <div className="welcome-model-custom-row">
+                <input
+                  type="text"
+                  className="welcome-input"
+                  value={customModel}
+                  onChange={(e) => { setCustomModel(e.target.value); setError('') }}
+                  placeholder="Enter custom model name..."
+                  autoFocus
+                />
+              </div>
+            )}
+            {step === 2 && error && <div className="welcome-error">{error}</div>}
             {isV4Model && (
               <div style={{ width: '100%', maxWidth: 440, marginTop: 4, marginBottom: 12 }}>
                 <div className="setting-label" style={{ marginBottom: 8 }}>Thinking Mode</div>
@@ -155,7 +181,17 @@ export function WelcomeSetup({ onComplete }: Props) {
             )}
             <div className="welcome-actions">
               <button className="btn btn-secondary" onClick={() => setStep(1)}>Back</button>
-              <button className="welcome-next-btn" onClick={() => setStep(3)}>
+              <button
+                className="welcome-next-btn"
+                onClick={() => {
+                  if (!selectedModel) {
+                    setError('Model name is required')
+                    return
+                  }
+                  setError('')
+                  setStep(3)
+                }}
+              >
                 Next
                 <ChevronRight size={16} />
               </button>

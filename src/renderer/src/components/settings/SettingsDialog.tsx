@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { X, Eye, EyeOff, FolderOpen, RotateCcw, Plus, Search, Trash2, Loader2 } from 'lucide-react'
 import { useSettingsStore } from '../../store/settings-store'
 import { DEFAULT_AGENT_PROFILES, type McpServerConfig } from '../../../../shared/types'
+import { MODEL_OPTIONS, isKnownModel, supportsThinkingControls } from '../../lib/model-options'
 
 interface Props {
   onClose: () => void
@@ -15,9 +16,11 @@ type McpDiscoveryState = {
 export function SettingsDialog({ onClose }: Props) {
   const settings = useSettingsStore((s) => s.settings)
   const updateSettings = useSettingsStore((s) => s.updateSettings)
+  const initialUsesKnownModel = isKnownModel(settings.model)
 
   const [apiKey, setApiKey] = useState(settings.apiKey)
-  const [model, setModel] = useState(settings.model)
+  const [modelMode, setModelMode] = useState(initialUsesKnownModel ? settings.model : '__custom__')
+  const [customModel, setCustomModel] = useState(initialUsesKnownModel ? '' : settings.model)
   const [workDir, setWorkDir] = useState(settings.workDirectory)
   const [systemPrompt, setSystemPrompt] = useState(settings.systemPrompt)
   const [showKey, setShowKey] = useState(false)
@@ -29,13 +32,19 @@ export function SettingsDialog({ onClose }: Props) {
   const [mcpServers, setMcpServers] = useState(settings.mcpServers)
   const [mcpDiscovery, setMcpDiscovery] = useState<Record<string, McpDiscoveryState>>({})
   const [terminalTimeoutMs, setTerminalTimeoutMs] = useState(settings.terminal.timeoutMs)
+  const [settingsError, setSettingsError] = useState('')
 
-  const isV4Model = model.startsWith('deepseek-v4-') || model === 'deepseek-chat' || model === 'deepseek-reasoner'
+  const selectedModel = modelMode === '__custom__' ? customModel.trim() : modelMode
+  const isV4Model = supportsThinkingControls(selectedModel)
 
   const handleSave = async () => {
+    if (!selectedModel) {
+      setSettingsError('Model name is required.')
+      return
+    }
     await updateSettings({
       apiKey,
-      model,
+      model: selectedModel,
       workDirectory: workDir,
       systemPrompt,
       reasoningEffort,
@@ -143,30 +152,45 @@ export function SettingsDialog({ onClose }: Props) {
             <label className="setting-label">Model</label>
             <select
               className="setting-input"
-              value={model.startsWith('__') ? model : model}
-              onChange={(e) => setModel(e.target.value)}
+              value={modelMode}
+              onChange={(e) => {
+                setModelMode(e.target.value)
+                setSettingsError('')
+                if (e.target.value !== '__custom__') setCustomModel('')
+              }}
             >
               <optgroup label="V4 Models">
-                <option value="deepseek-v4-flash">deepseek-v4-flash (Fast & Capable)</option>
-                <option value="deepseek-v4-pro">deepseek-v4-pro (Most Powerful)</option>
+                {MODEL_OPTIONS.filter((option) => option.id.startsWith('deepseek-v4-')).map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.id} ({option.description})
+                  </option>
+                ))}
               </optgroup>
               <optgroup label="Legacy Models">
-                <option value="deepseek-chat">deepseek-chat (V3)</option>
-                <option value="deepseek-reasoner">deepseek-reasoner (R1)</option>
+                {MODEL_OPTIONS.filter((option) => !option.id.startsWith('deepseek-v4-')).map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.id} ({option.name})
+                  </option>
+                ))}
               </optgroup>
               <optgroup label="Other">
                 <option value="__custom__">Custom model...</option>
               </optgroup>
             </select>
-            {model === '__custom__' && (
+            {modelMode === '__custom__' && (
               <input
                 type="text"
                 className="setting-input"
+                value={customModel}
                 placeholder="Enter custom model name..."
-                onChange={(e) => { if (e.target.value.trim()) setModel(e.target.value.trim()) }}
+                onChange={(e) => { setCustomModel(e.target.value); setSettingsError('') }}
                 autoFocus
               />
             )}
+            {modelMode === '__custom__' && (
+              <div className="setting-hint">Custom model names are saved exactly as entered.</div>
+            )}
+            {settingsError && <div className="setting-error">{settingsError}</div>}
           </div>
 
           {isV4Model && (
