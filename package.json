@@ -2,6 +2,18 @@
   "name": "deepseek-agent-workbench",
   "version": "1.0.0",
   "description": "DeepSeek Agent Workbench - an unofficial Electron agent app for DeepSeek API users",
+  "keywords": [
+    "deepseek",
+    "deepseek-ai",
+    "ai-agent",
+    "coding-agent",
+    "agent-workbench",
+    "mcp",
+    "electron",
+    "react",
+    "typescript",
+    "developer-tools"
+  ],
   "main": "./out/main/index.js",
   "author": "lunarfairy",
   "repository": {

@@ -4,6 +4,12 @@ DeepSeek Agent Workbench is an unofficial desktop agent app for DeepSeek API use
 
 This is a clean-room community project. It is not an official DeepSeek, Anthropic, or OpenAI product.
 
+## Why This Exists
+
+DeepSeek provides strong API models, but it does not currently ship an official local coding-agent desktop app. This project explores that missing layer: a user-controlled agent workbench where you bring your own DeepSeek API key, keep local tool actions visible, and approve every filesystem, command, or MCP capability before it runs.
+
+The goal is not to clone any vendor app. The goal is to build an open, DeepSeek-oriented agent shell with familiar coding-assistant ergonomics and a safety-first local workflow.
+
 ## Features
 
 - Plan-first chat workflow with structured Plan, Todo, Agents, and Approvals panels.
@@ -14,6 +20,14 @@ This is a clean-room community project. It is not an official DeepSeek, Anthropi
 - Streamed command output with manual confirmation and cancellation.
 - Local stdio MCP server configuration, discovery, and tool-call routing through the same approval flow.
 - Prompt profiles can be viewed, edited, and reset in Settings.
+
+## Safety Model
+
+- Tool calls are approval-first by default.
+- Read, write, command, and MCP actions are surfaced with separate risk labels.
+- Local commands run through a streamed command panel with confirmation and cancellation.
+- MCP servers are treated as external capabilities and routed through the same approval flow as native tools.
+- Agent profiles are editable so you can inspect and tune each role's default behavior.
 
 ## Tech Stack
 
@@ -31,17 +45,17 @@ Install dependencies:
 npm install
 ```
 
+Run the desktop app locally:
+
+```bash
+npm run dev
+```
+
 Run type checks:
 
 ```bash
 npx tsc -p tsconfig.node.json --noEmit
 npx tsc -p tsconfig.web.json --noEmit
-```
-
-Start the app in development:
-
-```bash
-npm run dev
 ```
 
 Build the app:
@@ -55,6 +69,7 @@ npm run build
 - Configure your API key and working directory inside the app.
 - The default model list is DeepSeek-oriented, but the architecture is intended to stay provider-adaptable.
 - Local commands and MCP tools should be treated as powerful capabilities. Review every approval prompt carefully.
+- This is an early workbench prototype. Expect rough edges around packaging, terminal behavior, and MCP server compatibility.
 
 ## License
 

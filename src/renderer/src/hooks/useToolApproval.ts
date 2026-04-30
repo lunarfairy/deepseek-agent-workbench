@@ -6,7 +6,14 @@ export function useToolApproval() {
 
   useEffect(() => {
     const cleanup = window.api.onToolApprovalRequest((request) => {
-      setPendingRequests((prev) => [...prev, request])
+      setPendingRequests((prev) => {
+        const exists = prev.some((candidate) => candidate.toolCallId === request.toolCallId)
+        return exists
+          ? prev.map((candidate) =>
+              candidate.toolCallId === request.toolCallId ? request : candidate
+            )
+          : [...prev, request]
+      })
     })
     return cleanup
   }, [])
@@ -21,5 +28,13 @@ export function useToolApproval() {
     await window.api.respondToolApproval({ toolCallId, approved: false })
   }, [])
 
-  return { pendingRequests, approve, reject }
+  const rejectAll = useCallback(async () => {
+    const ids = pendingRequests.map((request) => request.toolCallId)
+    setPendingRequests([])
+    await Promise.all(
+      ids.map((toolCallId) => window.api.respondToolApproval({ toolCallId, approved: false }))
+    )
+  }, [pendingRequests])
+
+  return { pendingRequests, approve, reject, rejectAll }
 }

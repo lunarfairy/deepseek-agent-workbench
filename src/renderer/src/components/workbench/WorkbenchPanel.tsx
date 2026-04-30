@@ -25,9 +25,10 @@ interface Props {
   pendingRequests: ToolApprovalRequest[]
   onApprove: (toolCallId: string) => void
   onReject: (toolCallId: string) => void
+  onRejectAll: () => void
 }
 
-export function WorkbenchPanel({ pendingRequests, onApprove, onReject }: Props) {
+export function WorkbenchPanel({ pendingRequests, onApprove, onReject, onRejectAll }: Props) {
   const conversation = useConversationStore((s) =>
     s.conversations.find((c) => c.id === s.activeConversationId)
   )
@@ -181,9 +182,20 @@ export function WorkbenchPanel({ pendingRequests, onApprove, onReject }: Props) 
       </section>
 
       <section className="workbench-section">
-        <div className="workbench-section-title">
-          <ShieldCheck size={15} />
-          <span>Approvals</span>
+        <div className="workbench-section-title approval-title">
+          <div>
+            <ShieldCheck size={15} />
+            <span>Approvals</span>
+            {pendingRequests.length > 0 && (
+              <span className="approval-count">{pendingRequests.length}</span>
+            )}
+          </div>
+          {pendingRequests.length > 1 && (
+            <button className="workbench-icon-btn danger" onClick={onRejectAll} title="Reject all pending tools">
+              <XCircle size={13} />
+              Reject all
+            </button>
+          )}
         </div>
         {pendingRequests.length > 0 ? (
           <div className="approval-list">

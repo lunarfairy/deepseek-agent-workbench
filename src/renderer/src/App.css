@@ -167,6 +167,40 @@ html, body, #root {
   color: var(--text);
 }
 
+.workbench-icon-btn.danger {
+  border-color: rgba(243, 139, 168, 0.35);
+  color: var(--red);
+}
+
+.workbench-icon-btn.danger:hover {
+  background: rgba(243, 139, 168, 0.14);
+  border-color: rgba(243, 139, 168, 0.55);
+}
+
+.approval-title {
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.approval-title > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.approval-count {
+  min-width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(250, 179, 135, 0.18);
+  color: var(--peach);
+  font-size: 11px;
+  line-height: 1;
+}
+
 .todo-list,
 .agent-task-list,
 .approval-list {
@@ -1125,21 +1159,78 @@ html, body, #root {
   margin: 4px 0;
 }
 
+.tool-call-card.risk-read {
+  border-color: rgba(137, 180, 250, 0.35);
+}
+
+.tool-call-card.risk-write {
+  border-color: rgba(250, 179, 135, 0.5);
+}
+
+.tool-call-card.risk-command {
+  border-color: rgba(243, 139, 168, 0.55);
+}
+
+.tool-call-card.risk-mcp {
+  border-color: rgba(203, 166, 247, 0.5);
+}
+
 .tool-call-header {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
   margin-bottom: 8px;
 }
 
 .tool-call-icon {
-  font-size: 16px;
+  color: var(--subtext0);
+  flex: 0 0 auto;
 }
 
 .tool-call-name {
   font-weight: 600;
   font-size: 14px;
   color: var(--peach);
+}
+
+.tool-risk-badge {
+  margin-left: auto;
+  border: 1px solid var(--surface1);
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 11px;
+  line-height: 1.25;
+  text-transform: uppercase;
+  color: var(--subtext0);
+  background: var(--surface0);
+}
+
+.tool-risk-badge.risk-read {
+  border-color: rgba(137, 180, 250, 0.35);
+  color: var(--blue);
+}
+
+.tool-risk-badge.risk-write {
+  border-color: rgba(250, 179, 135, 0.45);
+  color: var(--peach);
+}
+
+.tool-risk-badge.risk-command {
+  border-color: rgba(243, 139, 168, 0.45);
+  color: var(--red);
+}
+
+.tool-risk-badge.risk-mcp {
+  border-color: rgba(203, 166, 247, 0.45);
+  color: var(--mauve);
+}
+
+.tool-call-summary {
+  margin-bottom: 8px;
+  color: var(--subtext1);
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .tool-call-args {
@@ -1155,6 +1246,15 @@ html, body, #root {
 .tool-command {
   color: var(--green);
   font-family: 'Cascadia Code', 'Fira Code', monospace;
+  word-break: break-word;
+}
+
+.tool-cwd {
+  margin-top: 6px;
+  color: var(--overlay1);
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 12px;
+  word-break: break-all;
 }
 
 .tool-arg {

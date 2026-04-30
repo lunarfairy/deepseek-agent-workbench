@@ -13,7 +13,7 @@ export default function App() {
   const loadConversations = useConversationStore((s) => s.loadConversations)
   const [showWelcome, setShowWelcome] = useState(false)
   const [setupDone, setSetupDone] = useState(false)
-  const { pendingRequests, approve, reject } = useToolApproval()
+  const { pendingRequests, approve, reject, rejectAll } = useToolApproval()
 
   useEffect(() => {
     loadConversations()
@@ -54,6 +54,7 @@ export default function App() {
           pendingRequests={pendingRequests}
           onApprove={approve}
           onReject={reject}
+          onRejectAll={rejectAll}
         />
       </div>
     </div>
