@@ -25,7 +25,7 @@ export function ChatView() {
       <div className="message-list">
         {conversation.messages.length === 0 && (
           <div className="chat-empty">
-            <p>Send a message to start coding with DeepSeek.</p>
+            <p>Send a message to start coding with your configured model.</p>
           </div>
         )}
         {conversation.messages.map((msg) => (

@@ -9,8 +9,8 @@ export function MainPanel() {
     return (
       <div className="main-panel main-panel-empty">
         <div className="empty-state">
-          <h2>DeepSeek Codex</h2>
-          <p>Your AI programming assistant</p>
+          <h2>Lunar Agent Workbench</h2>
+          <p>Your local AI coding workbench</p>
           <button className="empty-start-btn" onClick={() => createConversation()}>
             Start a conversation
           </button>

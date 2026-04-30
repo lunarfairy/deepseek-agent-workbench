@@ -7,7 +7,7 @@ export function TitleBar() {
   return (
     <div className="titlebar">
       <div className="titlebar-left">
-        <span className="titlebar-title">DeepSeek Codex</span>
+        <span className="titlebar-title">Lunar Agent Workbench</span>
         <span className="titlebar-model">{settings.model || 'deepseek-v4-flash'}</span>
       </div>
       <div className="titlebar-controls">

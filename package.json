@@ -1,9 +1,17 @@
 {
-  "name": "deepseek-codex",
+  "name": "lunar-agent-workbench",
   "version": "1.0.0",
-  "description": "DeepSeek Codex - AI Programming Assistant",
+  "description": "Lunar Agent Workbench - an Electron AI coding assistant for DeepSeek-compatible workflows",
   "main": "./out/main/index.js",
-  "author": "DeepSeek Codex",
+  "author": "lunarfairy",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lunarfairy/lunar-agent-workbench.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lunarfairy/lunar-agent-workbench/issues"
+  },
+  "homepage": "https://github.com/lunarfairy/lunar-agent-workbench#readme",
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
@@ -38,8 +46,8 @@
     "typescript": "^5.6.0"
   },
   "build": {
-    "appId": "com.deepseek.codex",
-    "productName": "DeepSeek Codex",
+    "appId": "com.lunarfairy.agentworkbench",
+    "productName": "Lunar Agent Workbench",
     "directories": {
       "output": "dist"
     },
@@ -62,7 +70,7 @@
       "perMachine": false,
       "allowToChangeInstallationDirectory": false,
       "deleteAppDataOnUninstall": false,
-      "artifactName": "DeepSeek-Codex-Setup-${version}.exe"
+      "artifactName": "Lunar-Agent-Workbench-Setup-${version}.exe"
     },
     "asar": true
   }

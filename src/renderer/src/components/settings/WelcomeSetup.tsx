@@ -53,9 +53,9 @@ export function WelcomeSetup({ onComplete }: Props) {
                 <path d="M2 12l10 5 10-5" />
               </svg>
             </div>
-            <h1 className="welcome-title">Welcome to DeepSeek Codex</h1>
+            <h1 className="welcome-title">Welcome to Lunar Agent Workbench</h1>
             <p className="welcome-desc">
-              Your AI-powered programming assistant. Let's get you set up in a few quick steps.
+              A local AI coding workbench with plan-first workflows, tool approval, MCP, and agent profiles.
             </p>
             <button className="welcome-next-btn" onClick={() => setStep(1)}>
               Get Started
@@ -186,7 +186,7 @@ export function WelcomeSetup({ onComplete }: Props) {
             <div className="welcome-actions">
               <button className="btn btn-secondary" onClick={() => setStep(2)}>Back</button>
               <button className="welcome-next-btn" onClick={handleFinish}>
-                Start Coding
+                Start Working
                 <ChevronRight size={16} />
               </button>
             </div>

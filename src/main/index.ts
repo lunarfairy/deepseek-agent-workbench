@@ -39,7 +39,7 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
-  electronApp.setAppUserModelId('com.deepseek.codex')
+  electronApp.setAppUserModelId('com.lunarfairy.agentworkbench')
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
