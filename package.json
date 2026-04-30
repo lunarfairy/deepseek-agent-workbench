@@ -29,8 +29,8 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "build:exe": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-exe.ps1",
-    "package": "electron-vite build && electron-builder --win --dir && electron-builder --win --prepackaged dist/win-unpacked",
-    "package:dir": "electron-vite build && electron-builder --win --dir",
+    "package": "electron-vite build && electron-builder --win --dir --publish never && electron-builder --win --prepackaged dist/win-unpacked --publish never",
+    "package:dir": "electron-vite build && electron-builder --win --dir --publish never",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
