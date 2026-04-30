@@ -83,6 +83,20 @@ The generated files are written to:
 
 The installer is unsigned, so Windows may show a security warning.
 
+## GitHub Release Builds
+
+This repository includes a GitHub Actions workflow at `.github/workflows/windows-build.yml`.
+
+- Every push to `main`, pull request, or manual workflow run builds the Windows installer and uploads it as a workflow artifact.
+- Pushing a version tag such as `v1.0.0` creates a GitHub Release and uploads the Windows installer plus a zipped unpacked app.
+
+Release example:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
 ## Notes
 
 - Configure your API key and working directory inside the app.
@@ -181,6 +195,20 @@ npm run build:exe
 - 免安装应用：`dist\win-unpacked\DeepSeek Agent Workbench.exe`
 
 当前安装包没有代码签名，因此 Windows 可能会显示安全提示。
+
+## GitHub Release 构建
+
+仓库内置了 GitHub Actions 工作流：`.github/workflows/windows-build.yml`。
+
+- 每次 push 到 `main`、提交 PR，或手动运行 workflow，都会构建 Windows 安装包并上传为 workflow artifact。
+- 推送类似 `v1.0.0` 的版本 tag 时，会自动创建 GitHub Release，并上传 Windows 安装包和免安装版 zip。
+
+发布示例：
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
 
 ## 使用提示
 

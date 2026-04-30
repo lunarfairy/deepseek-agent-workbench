@@ -1,0 +1,78 @@
+name: Windows Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    name: Build Windows installer
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck main process
+        run: npx tsc -p tsconfig.node.json --noEmit
+
+      - name: Typecheck renderer
+        run: npx tsc -p tsconfig.web.json --noEmit
+
+      - name: Build Windows package
+        run: npm run package
+
+      - name: Zip unpacked app
+        shell: pwsh
+        run: Compress-Archive -Path dist/win-unpacked/* -DestinationPath dist/DeepSeek-Agent-Workbench-win-unpacked.zip -Force
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deepseek-agent-workbench-windows
+          path: |
+            dist/*.exe
+            dist/DeepSeek-Agent-Workbench-win-unpacked.zip
+          if-no-files-found: error
+
+  publish-release:
+    name: Publish GitHub release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build-windows
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: deepseek-agent-workbench-windows
+          path: dist-release
+
+      - name: Create GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = '${{ github.ref_name }}'
+          gh release create $tag dist-release/*.exe dist-release/DeepSeek-Agent-Workbench-win-unpacked.zip --title "DeepSeek Agent Workbench $tag" --notes "Windows installer and unpacked app archive for $tag."
