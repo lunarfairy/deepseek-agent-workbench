@@ -1,10 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { useConversationStore } from '../../store/conversation-store'
 import { useChat } from '../../hooks/useChat'
-import { useToolApproval } from '../../hooks/useToolApproval'
 import { MessageBubble } from './MessageBubble'
 import { MessageInput } from './MessageInput'
-import { ToolCallCard } from '../tools/ToolCallCard'
+import { CommandOutputPanel } from '../workbench/CommandOutputPanel'
 
 export function ChatView() {
   const conversation = useConversationStore((s) => {
@@ -13,12 +12,11 @@ export function ChatView() {
   })
   const isStreaming = useConversationStore((s) => s.isStreaming)
   const { sendMessage } = useChat()
-  const { pendingRequests, approve, reject } = useToolApproval()
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [conversation?.messages, pendingRequests])
+  }, [conversation?.messages])
 
   if (!conversation) return null
 
@@ -33,14 +31,6 @@ export function ChatView() {
         {conversation.messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} />
         ))}
-        {pendingRequests.map((req) => (
-          <ToolCallCard
-            key={req.toolCallId}
-            request={req}
-            onApprove={() => approve(req.toolCallId)}
-            onReject={() => reject(req.toolCallId)}
-          />
-        ))}
         {isStreaming && (
           <div className="streaming-indicator">
             <div className="streaming-dots">
@@ -50,6 +40,7 @@ export function ChatView() {
         )}
         <div ref={messagesEndRef} />
       </div>
+      <CommandOutputPanel />
       <MessageInput onSend={sendMessage} disabled={isStreaming} />
     </div>
   )

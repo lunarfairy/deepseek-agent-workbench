@@ -30,5 +30,13 @@ export const IPC = {
   WINDOW_CLOSE: 'window-close',
 
   // Streaming events (MessagePort)
-  STREAM_CHUNK: 'stream-chunk'
+  STREAM_CHUNK: 'stream-chunk',
+
+  // Command runs
+  RUN_COMMAND: 'run-command',
+  CANCEL_COMMAND: 'cancel-command',
+  COMMAND_RUN: 'command-run',
+
+  // MCP
+  DISCOVER_MCP_TOOLS: 'discover-mcp-tools'
 } as const

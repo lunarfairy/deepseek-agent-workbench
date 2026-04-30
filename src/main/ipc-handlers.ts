@@ -4,6 +4,8 @@ import { IPC } from '../shared/ipc-channels'
 import { loadSettings, saveSettings } from './services/settings-store'
 import { loadConversations, saveConversation, deleteConversation } from './services/conversation-store'
 import { runChatStream, setApprovalCallback, resolveToolApproval } from './services/deepseek-service'
+import { cancelCommandRun, runCommandStream } from './services/terminal-service'
+import { discoverMcpTools } from './services/mcp-service'
 
 export function registerIpcHandlers(): void {
   // ---------- Settings ----------
@@ -53,6 +55,32 @@ export function registerIpcHandlers(): void {
   // ---------- Tool Approval ----------
   ipcMain.handle(IPC.RESPOND_TOOL_APPROVAL, async (_, response) => {
     resolveToolApproval(response.toolCallId, response.approved)
+  })
+
+  // ---------- Command Runs ----------
+  ipcMain.handle(IPC.RUN_COMMAND, async (event, command: string, cwd?: string) => {
+    const settings = loadSettings()
+    const win = BrowserWindow.fromWebContents(event.sender)
+    return runCommandStream(
+      { command, cwd },
+      settings.workDirectory,
+      (run) => {
+        if (win && !win.isDestroyed()) {
+          win.webContents.send(IPC.COMMAND_RUN, run)
+        }
+      },
+      settings.terminal.timeoutMs
+    )
+  })
+
+  ipcMain.handle(IPC.CANCEL_COMMAND, async (_, id: string) => {
+    cancelCommandRun(id)
+  })
+
+  // ---------- MCP ----------
+  ipcMain.handle(IPC.DISCOVER_MCP_TOOLS, async (_, serverId: string) => {
+    const settings = loadSettings()
+    return discoverMcpTools(serverId, settings.mcpServers)
   })
 
   // ---------- Chat Streaming via webContents.send ----------

@@ -1,70 +1,12 @@
 import OpenAI from 'openai'
-import type { ElectronAPI, StreamChunk, ToolApprovalRequest, ChatMessage, AppSettings } from '../../shared/types'
-import { readFileContent, writeFileContent, listFiles } from './file-service'
-import { executeCommand } from './terminal-service'
+import type { AppSettings, CommandRun, StreamChunk, ToolApprovalRequest, ChatMessage } from '../../shared/types'
 import { loadSettings } from './settings-store'
-import { v4 as uuid } from 'uuid'
-
-const TOOL_DEFINITIONS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
-  {
-    type: 'function',
-    function: {
-      name: 'read_file',
-      description: 'Read the contents of a file',
-      parameters: {
-        type: 'object',
-        properties: {
-          path: { type: 'string', description: 'Relative path to the file' }
-        },
-        required: ['path']
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'write_file',
-      description: 'Write content to a file (creates directories if needed)',
-      parameters: {
-        type: 'object',
-        properties: {
-          path: { type: 'string', description: 'Relative path to the file' },
-          content: { type: 'string', description: 'Content to write' }
-        },
-        required: ['path', 'content']
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'list_files',
-      description: 'List files and directories in a given path',
-      parameters: {
-        type: 'object',
-        properties: {
-          path: { type: 'string', description: 'Relative directory path (default: ".")' }
-        },
-        required: ['path']
-      }
-    }
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'execute_command',
-      description: 'Execute a terminal/shell command',
-      parameters: {
-        type: 'object',
-        properties: {
-          command: { type: 'string', description: 'The command to execute' },
-          cwd: { type: 'string', description: 'Working directory for the command (optional)' }
-        },
-        required: ['command']
-      }
-    }
-  }
-]
+import {
+  executeRegisteredTool,
+  getToolDefinitions,
+  getToolRisk,
+  getToolSummary
+} from './tool-registry'
 
 interface PendingApproval {
   resolve: (approved: boolean) => void
@@ -99,7 +41,9 @@ async function waitForApproval(toolCallId: string, toolName: string, args: strin
       sendApprovalRequest({
         toolCallId,
         toolName: toolName as any,
-        args
+        args,
+        summary: getToolSummary(toolName, args),
+        risk: getToolRisk(toolName)
       })
     }
   })
@@ -155,26 +99,22 @@ function buildApiMessages(
   return apiMessages
 }
 
-async function executeTool(name: string, argsStr: string, workDirectory: string): Promise<string> {
-  let args: any
-  try {
-    args = JSON.parse(argsStr)
-  } catch {
-    throw new Error(`Invalid tool arguments: ${argsStr}`)
-  }
+function buildSystemPrompt(settings: AppSettings): string {
+  const enabledProfiles = settings.agentProfiles
+    .filter((profile) => profile.enabled)
+    .map((profile) => `### ${profile.name} (${profile.role})\n${profile.prompt}`)
+    .join('\n\n')
 
-  switch (name) {
-    case 'read_file':
-      return readFileContent(args.path, workDirectory)
-    case 'write_file':
-      return writeFileContent(args.path, args.content, workDirectory)
-    case 'list_files':
-      return listFiles(args.path || '.', workDirectory)
-    case 'execute_command':
-      return executeCommand(args, workDirectory)
-    default:
-      throw new Error(`Unknown tool: ${name}`)
-  }
+  return `${settings.systemPrompt}
+
+Agent workbench policy:
+- Plan-first mode is ${settings.planFirstEnabled ? 'enabled' : 'disabled'}.
+- All tool calls require explicit user approval.
+- Use specialist agent profiles when the user asks for planning, review, implementation, MCP, or multi-agent work.
+- Keep structured plan and todo updates concise and implementation-oriented.
+
+Available agent profiles:
+${enabledProfiles || '(no enabled profiles)'}`
 }
 
 export async function runChatStream(
@@ -194,7 +134,7 @@ export async function runChatStream(
     baseURL: 'https://api.deepseek.com'
   })
 
-  const apiMessages = buildApiMessages(messages, settings.systemPrompt, settings.thinkingEnabled)
+  const apiMessages = buildApiMessages(messages, buildSystemPrompt(settings), settings.thinkingEnabled)
   let continueLoop = true
 
   // V4 models: deepseek-v4-flash, deepseek-v4-pro
@@ -209,7 +149,7 @@ export async function runChatStream(
       const createParams: any = {
         model,
         messages: apiMessages,
-        tools: TOOL_DEFINITIONS,
+        tools: getToolDefinitions(),
         stream: true
       }
 
@@ -223,14 +163,14 @@ export async function runChatStream(
         createParams.reasoning_effort = settings.reasoningEffort
       }
 
-      const stream = await client.chat.completions.create(createParams)
+      const stream = (await client.chat.completions.create(createParams)) as unknown as AsyncIterable<any>
 
       let currentContent = ''
       let currentReasoningContent = ''
       const toolCalls: Map<number, { id: string; name: string; arguments: string }> = new Map()
 
       for await (const chunk of stream) {
-        const delta = chunk.choices[0]?.delta
+        const delta = chunk.choices[0]?.delta as any
         if (!delta) continue
 
         // Reasoning content (thinking/CoT)
@@ -279,7 +219,16 @@ export async function runChatStream(
         apiMessages.push(assistantApiMsg)
 
         // Process each tool call
-        for (const [_, tc] of toolCalls) {
+        for (const tc of Array.from(toolCalls.values())) {
+          sendChunk({
+            type: 'tool_call',
+            toolCall: {
+              id: tc.id,
+              type: 'function',
+              function: { name: tc.name, arguments: tc.arguments }
+            }
+          })
+
           // Request approval from user
           const approved = await waitForApproval(tc.id, tc.name, tc.arguments)
 
@@ -292,13 +241,25 @@ export async function runChatStream(
             })
             sendChunk({
               type: 'tool_result',
-              toolResult: { toolCallId: tc.id, content: result, approved: false }
+              toolResult: {
+                toolCallId: tc.id,
+                toolName: tc.name,
+                content: result,
+                approved: false,
+                risk: getToolRisk(tc.name)
+              }
             })
           } else {
             // Execute the tool
             let result: string
             try {
-              result = await executeTool(tc.name, tc.arguments, settings.workDirectory)
+              result = await executeRegisteredTool(tc.name, tc.arguments, {
+                workDirectory: settings.workDirectory,
+                terminalTimeoutMs: settings.terminal.timeoutMs,
+                onCommandRun: (run: CommandRun) => {
+                  sendChunk({ type: 'command_output', commandRun: run })
+                }
+              })
             } catch (err: any) {
               result = `Error: ${err.message}`
             }
@@ -309,7 +270,13 @@ export async function runChatStream(
             })
             sendChunk({
               type: 'tool_result',
-              toolResult: { toolCallId: tc.id, content: result, approved: true }
+              toolResult: {
+                toolCallId: tc.id,
+                toolName: tc.name,
+                content: result,
+                approved: true,
+                risk: getToolRisk(tc.name)
+              }
             })
           }
         }

@@ -1,6 +1,12 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '../shared/ipc-channels'
-import type { ElectronAPI, StreamChunk, ToolApprovalRequest, ToolApprovalResponse } from '../shared/types'
+import type {
+  CommandRun,
+  ElectronAPI,
+  StreamChunk,
+  ToolApprovalRequest,
+  ToolApprovalResponse
+} from '../shared/types'
 
 const api: ElectronAPI = {
   // Settings
@@ -30,6 +36,22 @@ const api: ElectronAPI = {
   respondToolApproval: (response: ToolApprovalResponse) => {
     return ipcRenderer.invoke(IPC.RESPOND_TOOL_APPROVAL, response)
   },
+
+  // Command runs
+  runCommand: (command: string, cwd?: string) => ipcRenderer.invoke(IPC.RUN_COMMAND, command, cwd),
+  cancelCommand: (id: string) => ipcRenderer.invoke(IPC.CANCEL_COMMAND, id),
+  onCommandRun: (callback) => {
+    const listener = (_event: Electron.IpcRendererEvent, run: CommandRun) => {
+      callback(run)
+    }
+    ipcRenderer.on(IPC.COMMAND_RUN, listener)
+    return () => {
+      ipcRenderer.removeListener(IPC.COMMAND_RUN, listener)
+    }
+  },
+
+  // MCP
+  discoverMcpTools: (serverId: string) => ipcRenderer.invoke(IPC.DISCOVER_MCP_TOOLS, serverId),
 
   // Dialogs
   selectDirectory: () => ipcRenderer.invoke(IPC.SELECT_DIRECTORY),
