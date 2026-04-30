@@ -124,6 +124,17 @@ export interface AppInfo {
   releasesUrl: string
 }
 
+export interface AppUpdateInfo {
+  currentVersion: string
+  latestVersion: string | null
+  updateAvailable: boolean
+  releaseUrl: string
+  releaseName?: string
+  publishedAt?: string
+  checkedAt: number
+  error?: string
+}
+
 export interface ToolCall {
   id: string
   type: 'function'
@@ -348,6 +359,7 @@ export interface StreamChunk {
 export interface ElectronAPI {
   // App metadata
   getAppInfo(): Promise<AppInfo>
+  checkForUpdates(): Promise<AppUpdateInfo>
 
   // Settings
   getSettings(): Promise<AppSettings>

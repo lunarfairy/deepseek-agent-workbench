@@ -11,6 +11,7 @@ import type {
 const api: ElectronAPI = {
   // App metadata
   getAppInfo: () => ipcRenderer.invoke(IPC.GET_APP_INFO),
+  checkForUpdates: () => ipcRenderer.invoke(IPC.CHECK_FOR_UPDATES),
 
   // Settings
   getSettings: () => ipcRenderer.invoke(IPC.GET_SETTINGS),

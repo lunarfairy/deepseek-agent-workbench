@@ -3,6 +3,7 @@
 export const IPC = {
   // App metadata
   GET_APP_INFO: 'get-app-info',
+  CHECK_FOR_UPDATES: 'check-for-updates',
 
   // Settings
   GET_SETTINGS: 'get-settings',

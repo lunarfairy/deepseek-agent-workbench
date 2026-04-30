@@ -13,7 +13,12 @@ import {
   ExternalLink
 } from 'lucide-react'
 import { useSettingsStore } from '../../store/settings-store'
-import { DEFAULT_AGENT_PROFILES, type AppInfo, type McpServerConfig } from '../../../../shared/types'
+import {
+  DEFAULT_AGENT_PROFILES,
+  type AppInfo,
+  type AppUpdateInfo,
+  type McpServerConfig
+} from '../../../../shared/types'
 import { MODEL_OPTIONS, isKnownModel, supportsThinkingControls } from '../../lib/model-options'
 import { PROJECT_RELEASES_URL, PROJECT_REPOSITORY_URL } from '../../../../shared/project'
 
@@ -47,6 +52,8 @@ export function SettingsDialog({ onClose }: Props) {
   const [terminalTimeoutMs, setTerminalTimeoutMs] = useState(settings.terminal.timeoutMs)
   const [settingsError, setSettingsError] = useState('')
   const [appInfo, setAppInfo] = useState<AppInfo | null>(null)
+  const [updateInfo, setUpdateInfo] = useState<AppUpdateInfo | null>(null)
+  const [isCheckingUpdates, setIsCheckingUpdates] = useState(false)
 
   const selectedModel = modelMode === '__custom__' ? customModel.trim() : modelMode
   const isV4Model = supportsThinkingControls(selectedModel)
@@ -90,6 +97,25 @@ export function SettingsDialog({ onClose }: Props) {
   const handleSelectDir = async () => {
     const dir = await window.api.selectDirectory()
     if (dir) setWorkDir(dir)
+  }
+
+  const handleCheckForUpdates = async () => {
+    setIsCheckingUpdates(true)
+    try {
+      const result = await window.api.checkForUpdates()
+      setUpdateInfo(result)
+    } catch (err: any) {
+      setUpdateInfo({
+        currentVersion: appInfo?.version || '0.0.0',
+        latestVersion: null,
+        updateAvailable: false,
+        releaseUrl: PROJECT_RELEASES_URL,
+        checkedAt: Date.now(),
+        error: err?.message || 'Update check failed.'
+      })
+    } finally {
+      setIsCheckingUpdates(false)
+    }
   }
 
   const updateAgentPrompt = (role: string, prompt: string) => {
@@ -299,11 +325,12 @@ export function SettingsDialog({ onClose }: Props) {
                 </button>
                 <button
                   className="setting-small-btn"
-                  onClick={() => window.api.openExternalUrl(appInfo?.releasesUrl || PROJECT_RELEASES_URL)}
+                  onClick={handleCheckForUpdates}
+                  disabled={isCheckingUpdates}
                   title="Open latest GitHub release"
                 >
-                  <RefreshCw size={13} />
-                  Check for updates
+                  {isCheckingUpdates ? <Loader2 size={13} className="spin" /> : <RefreshCw size={13} />}
+                  {isCheckingUpdates ? 'Checking...' : 'Check for updates'}
                 </button>
               </div>
             </div>
@@ -317,8 +344,27 @@ export function SettingsDialog({ onClose }: Props) {
                 <strong>{appInfo?.version ? `v${appInfo.version}` : 'Loading...'}</strong>
               </div>
             </div>
+            {updateInfo && (
+              <div
+                className={`setting-update-status ${
+                  updateInfo.error ? 'error' : updateInfo.updateAvailable ? 'success' : 'neutral'
+                }`}
+              >
+                <strong>{getUpdateStatusTitle(updateInfo)}</strong>
+                <span>{getUpdateStatusDetail(updateInfo)}</span>
+                {(updateInfo.updateAvailable || updateInfo.latestVersion) && (
+                  <button
+                    className="setting-small-btn"
+                    onClick={() => window.api.openExternalUrl(updateInfo.releaseUrl)}
+                  >
+                    <ExternalLink size={13} />
+                    Open release
+                  </button>
+                )}
+              </div>
+            )}
             <div className="setting-hint">
-              Opens the latest GitHub release page. Automatic in-app updates are not bundled yet.
+              Checks the latest GitHub release. Automatic in-app downloads are not bundled yet.
             </div>
           </div>
 
@@ -490,4 +536,21 @@ export function SettingsDialog({ onClose }: Props) {
 function splitCommandArgs(input: string): string[] {
   const matches = input.match(/"([^"]*)"|'([^']*)'|\S+/g) || []
   return matches.map((value) => value.replace(/^['"]|['"]$/g, '')).filter(Boolean)
+}
+
+function getUpdateStatusTitle(info: AppUpdateInfo): string {
+  if (info.error) return 'Update check failed'
+  if (info.updateAvailable) return `New version available: v${info.latestVersion}`
+  return 'You are on the latest version'
+}
+
+function getUpdateStatusDetail(info: AppUpdateInfo): string {
+  if (info.error) return info.error
+  const latest = info.latestVersion ? `v${info.latestVersion}` : 'unknown'
+  const checkedAt = new Date(info.checkedAt).toLocaleString()
+  const published = info.publishedAt ? ` Published ${new Date(info.publishedAt).toLocaleDateString()}.` : ''
+  if (info.updateAvailable) {
+    return `Current v${info.currentVersion}, latest ${latest}.${published}`
+  }
+  return `Current v${info.currentVersion}, latest ${latest}. Checked ${checkedAt}.`
 }

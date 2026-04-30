@@ -1578,6 +1578,12 @@ html, body, #root {
   color: var(--text);
 }
 
+.setting-small-btn:disabled {
+  color: var(--overlay0);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .setting-action-row {
   display: flex;
   align-items: center;
@@ -1614,6 +1620,44 @@ html, body, #root {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.setting-update-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  border: 1px solid var(--surface0);
+  border-radius: var(--radius-sm);
+  background: rgba(17, 17, 27, 0.28);
+  padding: 8px 10px;
+}
+
+.setting-update-status strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.setting-update-status span {
+  flex: 1 1 240px;
+  color: var(--subtext0);
+  font-size: 12px;
+}
+
+.setting-update-status.success {
+  border-color: rgba(166, 227, 161, 0.35);
+}
+
+.setting-update-status.success strong {
+  color: var(--green);
+}
+
+.setting-update-status.error {
+  border-color: rgba(243, 139, 168, 0.35);
+}
+
+.setting-update-status.error strong {
+  color: var(--red);
 }
 
 .setting-hint {
