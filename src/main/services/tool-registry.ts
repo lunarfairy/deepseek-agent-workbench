@@ -32,6 +32,10 @@ interface RegisteredTool {
   execute: (args: any, context: ToolContext) => Promise<string>
 }
 
+interface ToolDefinitionOptions {
+  includeMcpTools?: boolean
+}
+
 function schema(
   name: ToolName,
   description: string,
@@ -157,16 +161,34 @@ const tools: RegisteredTool[] = [
       replace: { type: 'string', description: 'Replacement text' }
     }, ['path', 'search', 'replace']),
     execute: (args, context) => applyTextPatch(args.path, args.search, args.replace, context.workDirectory)
+  },
+  {
+    name: 'discover_mcp_tools',
+    risk: 'mcp',
+    summary: () => 'Discover configured MCP tools',
+    definition: schema('discover_mcp_tools', 'Discover tools from configured local MCP servers after user approval', {
+      reason: { type: 'string', description: 'Why MCP tool discovery is needed now' }
+    }, []),
+    execute: async (_args, context) => {
+      const mcpTools = await discoverConfiguredMcpTools(context.mcpServers || [])
+      if (mcpTools.length === 0) return 'No MCP tools discovered.'
+      return mcpTools
+        .map((tool) => `${tool.registeredName} (${tool.serverName}/${tool.name})`)
+        .join('\n')
+    }
   }
 ]
 
 const toolMap = new Map(tools.map((tool) => [tool.name, tool]))
 
 export async function getToolDefinitions(
-  mcpServers: McpServerConfig[] = []
+  mcpServers: McpServerConfig[] = [],
+  options: ToolDefinitionOptions = {}
 ): Promise<OpenAI.Chat.Completions.ChatCompletionTool[]> {
+  const nativeTools = tools.map((tool) => tool.definition)
+  if (!options.includeMcpTools) return nativeTools
   const mcpTools = await discoverConfiguredMcpTools(mcpServers)
-  return [...tools.map((tool) => tool.definition), ...mcpTools.map(toMcpToolDefinition)]
+  return [...nativeTools, ...mcpTools.map(toMcpToolDefinition)]
 }
 
 export function getToolRisk(name: string): ToolRisk {

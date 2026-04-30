@@ -19,10 +19,12 @@ interface PendingApproval {
   resolve: (approved: boolean) => void
   toolName: string
   args: string
+  timer: ReturnType<typeof setTimeout>
 }
 
 // Map of pending tool approvals keyed by toolCallId
 const pendingApprovals = new Map<string, PendingApproval>()
+const APPROVAL_TIMEOUT_MS = 5 * 60 * 1000
 
 // Callback to send tool approval requests to renderer
 let sendApprovalRequest: ((req: ToolApprovalRequest) => void) | null = null
@@ -35,16 +37,34 @@ export function resolveToolApproval(toolCallId: string, approved: boolean): void
   const pending = pendingApprovals.get(toolCallId)
   if (pending) {
     pending.resolve(approved)
-    pendingApprovals.delete(toolCallId)
+  }
+}
+
+export function rejectAllPendingApprovals(): void {
+  for (const pending of Array.from(pendingApprovals.values())) {
+    pending.resolve(false)
   }
 }
 
 async function waitForApproval(toolCallId: string, toolName: string, args: string): Promise<boolean> {
   return new Promise((resolve) => {
-    pendingApprovals.set(toolCallId, { resolve, toolName, args })
+    const finish = (approved: boolean) => {
+      const pending = pendingApprovals.get(toolCallId)
+      if (pending) clearTimeout(pending.timer)
+      pendingApprovals.delete(toolCallId)
+      resolve(approved)
+    }
+
+    const timer = setTimeout(() => finish(false), APPROVAL_TIMEOUT_MS)
+    pendingApprovals.set(toolCallId, { resolve: finish, toolName, args, timer })
+
+    if (!sendApprovalRequest) {
+      finish(false)
+      return
+    }
 
     // Send approval request to renderer
-    if (sendApprovalRequest) {
+    try {
       sendApprovalRequest({
         toolCallId,
         toolName: toolName as any,
@@ -52,6 +72,8 @@ async function waitForApproval(toolCallId: string, toolName: string, args: strin
         summary: getToolSummary(toolName, args),
         risk: getToolRisk(toolName)
       })
+    } catch {
+      finish(false)
     }
   })
 }
@@ -134,7 +156,7 @@ Current workbench state:
 ${formatWorkbenchContext(streamContext)}
 
 Available MCP tools:
-${mcpToolNames.length > 0 ? mcpToolNames.map((name) => `- ${name}`).join('\n') : '(none discovered)'}`
+${mcpToolNames.length > 0 ? mcpToolNames.map((name) => `- ${name}`).join('\n') : '(none discovered yet; call discover_mcp_tools after approval if MCP tools are needed)'}`
 }
 
 export async function runChatStream(
@@ -155,7 +177,7 @@ export async function runChatStream(
     baseURL: 'https://api.deepseek.com'
   })
 
-  const toolDefinitions = await getToolDefinitions(settings.mcpServers)
+  let toolDefinitions = await getToolDefinitions(settings.mcpServers)
   const apiMessages = buildApiMessages(
     messages,
     buildSystemPrompt(
@@ -311,6 +333,9 @@ export async function runChatStream(
                   sendChunk({ type: 'command_output', commandRun: run })
                 }
               })
+              if (tc.name === 'discover_mcp_tools') {
+                toolDefinitions = await getToolDefinitions(settings.mcpServers, { includeMcpTools: true })
+              }
             } catch (err: any) {
               result = `Error: ${err.message}`
             }

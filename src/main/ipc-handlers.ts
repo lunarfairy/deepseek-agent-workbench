@@ -3,7 +3,12 @@ import { join, isAbsolute } from 'path'
 import { IPC } from '../shared/ipc-channels'
 import { loadSettings, saveSettings } from './services/settings-store'
 import { loadConversations, saveConversation, deleteConversation } from './services/conversation-store'
-import { runChatStream, setApprovalCallback, resolveToolApproval } from './services/deepseek-service'
+import {
+  rejectAllPendingApprovals,
+  resolveToolApproval,
+  runChatStream,
+  setApprovalCallback
+} from './services/deepseek-service'
 import { cancelCommandRun, runCommandStream } from './services/terminal-service'
 import { discoverMcpTools } from './services/mcp-service'
 import type { AppUpdateInfo, ChatStreamContext, McpServerConfig } from '../shared/types'
@@ -128,6 +133,7 @@ export function registerIpcHandlers(): void {
     async (event, _conversationId, messages, streamContext?: ChatStreamContext) => {
       const win = BrowserWindow.fromWebContents(event.sender)
       if (!win) return
+      win.once('closed', rejectAllPendingApprovals)
 
       // Send stream chunks to renderer via IPC events
       const sendChunk = (chunk: any) => {
@@ -152,10 +158,14 @@ export function registerIpcHandlers(): void {
       })
 
       // Run the stream
-      runChatStream(messages, streamContext, sendChunk).catch((err) => {
-        sendChunk({ type: 'error', error: err.message })
-        sendChunk({ type: 'done' })
-      })
+      runChatStream(messages, streamContext, sendChunk)
+        .catch((err) => {
+          sendChunk({ type: 'error', error: err.message })
+          sendChunk({ type: 'done' })
+        })
+        .finally(() => {
+          win.removeListener('closed', rejectAllPendingApprovals)
+        })
     }
   )
 }

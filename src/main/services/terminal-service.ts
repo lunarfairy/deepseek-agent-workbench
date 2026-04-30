@@ -1,25 +1,25 @@
 import { spawn } from 'child_process'
-import { resolve, relative } from 'path'
+import { resolve } from 'path'
 import { v4 as uuid } from 'uuid'
 import type { CommandRun, ExecuteCommandArgs } from '../../shared/types'
+import { resolveInside } from './path-safety'
 
-const activeCommands = new Map<string, ReturnType<typeof spawn>>()
+interface ActiveCommand {
+  cancel: () => void
+}
+
+const activeCommands = new Map<string, ActiveCommand>()
 
 function resolveSafeCwd(cwd: string | undefined, workDirectory: string): string {
   const base = workDirectory || process.cwd()
-  const resolved = resolve(base, cwd || '.')
-  if (!workDirectory) return resolved
-  const rel = relative(resolve(workDirectory), resolved)
-  if (rel && (rel.startsWith('..') || resolve(rel).startsWith('..'))) {
-    throw new Error(`Command cwd is outside work directory: ${cwd}`)
-  }
-  return resolved
+  if (!workDirectory) return resolve(base, cwd || '.')
+  return resolveInside(workDirectory, cwd || '.', 'Command cwd')
 }
 
 export function cancelCommandRun(id: string): void {
-  const proc = activeCommands.get(id)
-  if (proc) {
-    proc.kill()
+  const command = activeCommands.get(id)
+  if (command) {
+    command.cancel()
     activeCommands.delete(id)
   }
 }
@@ -46,8 +46,13 @@ export function runCommandStream(
       exitCode: null,
       startedAt: Date.now()
     }
+    let settled = false
+    let timer: ReturnType<typeof setTimeout> | undefined
 
     const finish = (updates: Partial<CommandRun>) => {
+      if (settled) return
+      settled = true
+      if (timer) clearTimeout(timer)
       Object.assign(run, updates, { finishedAt: Date.now() })
       activeCommands.delete(id)
       onUpdate({ ...run })
@@ -60,34 +65,45 @@ export function runCommandStream(
       stdio: ['pipe', 'pipe', 'pipe'],
       windowsHide: true
     })
-    activeCommands.set(id, proc)
+
+    const cancel = (message = '[Command cancelled]') => {
+      if (!proc.killed) proc.kill()
+      finish({
+        status: 'cancelled',
+        exitCode: null,
+        stderr: run.stderr ? `${run.stderr}\n${message}` : message
+      })
+    }
+
+    activeCommands.set(id, { cancel })
     onUpdate({ ...run })
 
-    const timer = setTimeout(() => {
+    timer = setTimeout(() => {
       if (activeCommands.has(id)) {
-        proc.kill()
-        finish({ status: 'cancelled', stderr: `${run.stderr}\n[Command timed out after ${timeoutMs}ms]` })
+        cancel(`[Command timed out after ${timeoutMs}ms]`)
       }
     }, timeoutMs)
 
     proc.stdout.on('data', (data: Buffer) => {
+      if (settled) return
       run.stdout += data.toString()
       onUpdate({ ...run })
     })
 
     proc.stderr.on('data', (data: Buffer) => {
+      if (settled) return
       run.stderr += data.toString()
       onUpdate({ ...run })
     })
 
     proc.on('close', (code) => {
-      clearTimeout(timer)
-      if (run.status === 'cancelled') return
+      if (settled) return
       finish({ status: code === 0 ? 'completed' : 'failed', exitCode: code })
     })
 
     proc.on('error', (err) => {
-      clearTimeout(timer)
+      if (settled) return
+      if (timer) clearTimeout(timer)
       activeCommands.delete(id)
       reject(new Error(`Command execution failed: ${err.message}`))
     })

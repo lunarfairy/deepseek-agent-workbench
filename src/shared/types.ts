@@ -287,6 +287,7 @@ export type ToolName =
   | 'read_many'
   | 'stat_path'
   | 'apply_patch'
+  | 'discover_mcp_tools'
   | string
 
 export interface ReadFileArgs {

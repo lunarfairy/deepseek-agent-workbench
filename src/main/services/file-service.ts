@@ -1,20 +1,9 @@
 import { readFile, writeFile, mkdir, readdir, stat } from 'fs/promises'
-import { join, resolve, relative, dirname } from 'path'
-
-function isPathSafe(filePath: string, workDirectory: string): boolean {
-  if (!workDirectory) return false
-  const resolved = resolve(filePath)
-  const resolvedWork = resolve(workDirectory)
-  const rel = relative(resolvedWork, resolved)
-  return rel === '' || (!rel.startsWith('..') && !resolve(rel).startsWith('..'))
-}
+import { join, dirname } from 'path'
+import { resolveInside } from './path-safety'
 
 function resolveSafePath(inputPath: string, workDirectory: string): string {
-  const fullPath = resolve(workDirectory, inputPath || '.')
-  if (!isPathSafe(fullPath, workDirectory)) {
-    throw new Error(`Path is outside work directory: ${inputPath}`)
-  }
-  return fullPath
+  return resolveInside(workDirectory, inputPath || '.', 'Path')
 }
 
 async function walkFiles(
@@ -42,10 +31,7 @@ async function walkFiles(
 }
 
 export async function readFileContent(filePath: string, workDirectory: string): Promise<string> {
-  const fullPath = join(workDirectory, filePath)
-  if (!isPathSafe(fullPath, workDirectory)) {
-    throw new Error(`Path is outside work directory: ${filePath}`)
-  }
+  const fullPath = resolveSafePath(filePath, workDirectory)
   return readFile(fullPath, 'utf-8')
 }
 
@@ -54,10 +40,7 @@ export async function writeFileContent(
   content: string,
   workDirectory: string
 ): Promise<string> {
-  const fullPath = join(workDirectory, filePath)
-  if (!isPathSafe(fullPath, workDirectory)) {
-    throw new Error(`Path is outside work directory: ${filePath}`)
-  }
+  const fullPath = resolveSafePath(filePath, workDirectory)
   const dir = dirname(fullPath)
   await mkdir(dir, { recursive: true })
   await writeFile(fullPath, content, 'utf-8')
@@ -65,10 +48,7 @@ export async function writeFileContent(
 }
 
 export async function listFiles(dirPath: string, workDirectory: string): Promise<string> {
-  const fullPath = join(workDirectory, dirPath || '.')
-  if (!isPathSafe(fullPath, workDirectory)) {
-    throw new Error(`Path is outside work directory: ${dirPath}`)
-  }
+  const fullPath = resolveSafePath(dirPath || '.', workDirectory)
   const entries = await readdir(fullPath, { withFileTypes: true })
   const results = await Promise.all(
     entries.map(async (entry) => {
