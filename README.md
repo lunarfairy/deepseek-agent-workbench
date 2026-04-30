@@ -86,6 +86,7 @@ The installer is unsigned, so Windows may show a security warning.
 ## Notes
 
 - Configure your API key and working directory inside the app.
+- Use the title-bar Update button or Settings -> Updates to open the latest GitHub release page.
 - The default model list is DeepSeek-oriented, but the architecture is intended to stay provider-adaptable.
 - Local commands and MCP tools should be treated as powerful capabilities. Review every approval prompt carefully.
 - This is an early workbench prototype. Expect rough edges around packaging, terminal behavior, and MCP server compatibility.
@@ -184,6 +185,7 @@ npm run build:exe
 ## 使用提示
 
 - 首次启动后，在应用内配置 DeepSeek API Key、模型和工作目录。
+- 可以通过标题栏的 Update 按钮，或 Settings -> Updates 打开最新 GitHub Release 页面。
 - 默认模型列表偏向 DeepSeek，但架构会尽量保持可扩展。
 - 本地命令和 MCP 工具都属于高权限能力，审批前请确认每次调用内容。
 - 当前项目还处于早期原型阶段，打包、终端行为和 MCP 兼容性可能仍有粗糙之处。

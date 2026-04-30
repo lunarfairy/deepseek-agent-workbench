@@ -1,8 +1,20 @@
 import { useState } from 'react'
-import { X, Eye, EyeOff, FolderOpen, RotateCcw, Plus, Search, Trash2, Loader2 } from 'lucide-react'
+import {
+  X,
+  Eye,
+  EyeOff,
+  FolderOpen,
+  RotateCcw,
+  Plus,
+  Search,
+  Trash2,
+  Loader2,
+  RefreshCw
+} from 'lucide-react'
 import { useSettingsStore } from '../../store/settings-store'
 import { DEFAULT_AGENT_PROFILES, type McpServerConfig } from '../../../../shared/types'
 import { MODEL_OPTIONS, isKnownModel, supportsThinkingControls } from '../../lib/model-options'
+import { PROJECT_RELEASES_URL } from '../../../../shared/project'
 
 interface Props {
   onClose: () => void
@@ -253,6 +265,25 @@ export function SettingsDialog({ onClose }: Props) {
               onChange={(e) => setSystemPrompt(e.target.value)}
               rows={6}
             />
+          </div>
+
+          <div className="settings-divider" />
+
+          <div className="setting-group">
+            <div className="setting-label-row">
+              <label className="setting-label">Updates</label>
+              <button
+                className="setting-small-btn"
+                onClick={() => window.api.openExternalUrl(PROJECT_RELEASES_URL)}
+                title="Open latest GitHub release"
+              >
+                <RefreshCw size={13} />
+                Check for updates
+              </button>
+            </div>
+            <div className="setting-hint">
+              Opens the latest GitHub release page. Automatic in-app updates are not bundled yet.
+            </div>
           </div>
 
           <div className="settings-divider" />

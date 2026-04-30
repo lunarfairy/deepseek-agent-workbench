@@ -60,6 +60,7 @@ const api: ElectronAPI = {
   // Open paths
   openInExplorer: (path: string) => ipcRenderer.invoke(IPC.OPEN_IN_EXPLORER, path),
   openFile: (path: string) => ipcRenderer.invoke(IPC.OPEN_FILE, path),
+  openExternalUrl: (url: string) => ipcRenderer.invoke(IPC.OPEN_EXTERNAL_URL, url),
 
   // Window controls
   windowMinimize: () => ipcRenderer.send(IPC.WINDOW_MINIMIZE),

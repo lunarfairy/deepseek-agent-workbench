@@ -23,6 +23,7 @@ export const IPC = {
   // Open path in explorer / editor
   OPEN_IN_EXPLORER: 'open-in-explorer',
   OPEN_FILE: 'open-file',
+  OPEN_EXTERNAL_URL: 'open-external-url',
 
   // Window controls
   WINDOW_MINIMIZE: 'window-minimize',

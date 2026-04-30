@@ -373,6 +373,7 @@ export interface ElectronAPI {
   // Open paths
   openInExplorer(path: string): void
   openFile(path: string): void
+  openExternalUrl(url: string): Promise<void>
 
   // Window controls
   windowMinimize(): void

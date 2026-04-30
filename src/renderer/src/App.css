@@ -429,6 +429,28 @@ html, body, #root {
   transition: background 0.15s, color 0.15s;
 }
 
+.titlebar-update-btn {
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: 6px;
+  padding: 0 9px;
+  border: 1px solid var(--surface1);
+  border-radius: var(--radius-sm);
+  background: var(--surface0);
+  color: var(--subtext0);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.titlebar-update-btn:hover {
+  background: var(--surface1);
+  border-color: var(--surface2);
+  color: var(--text);
+}
+
 .titlebar-btn:hover {
   background: var(--surface0);
   color: var(--text);

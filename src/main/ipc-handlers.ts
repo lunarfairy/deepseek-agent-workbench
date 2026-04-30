@@ -7,6 +7,7 @@ import { runChatStream, setApprovalCallback, resolveToolApproval } from './servi
 import { cancelCommandRun, runCommandStream } from './services/terminal-service'
 import { discoverMcpTools } from './services/mcp-service'
 import type { ChatStreamContext, McpServerConfig } from '../shared/types'
+import { PROJECT_REPOSITORY_URL } from '../shared/project'
 
 export function registerIpcHandlers(): void {
   // ---------- Settings ----------
@@ -51,6 +52,13 @@ export function registerIpcHandlers(): void {
     const settings = loadSettings()
     const fullPath = isAbsolute(inputPath) ? inputPath : join(settings.workDirectory, inputPath)
     await shell.openPath(fullPath)
+  })
+
+  ipcMain.handle(IPC.OPEN_EXTERNAL_URL, async (_, inputUrl: string) => {
+    if (!isAllowedExternalUrl(inputUrl)) {
+      throw new Error('External URL is not allowed')
+    }
+    await shell.openExternal(inputUrl)
   })
 
   // ---------- Tool Approval ----------
@@ -123,4 +131,19 @@ export function registerIpcHandlers(): void {
       })
     }
   )
+}
+
+function isAllowedExternalUrl(inputUrl: string): boolean {
+  try {
+    const url = new URL(inputUrl)
+    const repositoryUrl = new URL(PROJECT_REPOSITORY_URL)
+    return (
+      url.protocol === 'https:' &&
+      url.hostname === repositoryUrl.hostname &&
+      (url.pathname === repositoryUrl.pathname ||
+        url.pathname.startsWith(`${repositoryUrl.pathname}/`))
+    )
+  } catch {
+    return false
+  }
 }
