@@ -108,7 +108,7 @@ async function initializeSession(session: McpSession): Promise<void> {
     protocolVersion: MCP_PROTOCOL_VERSION,
     capabilities: {},
     clientInfo: {
-      name: 'lunar-agent-workbench',
+      name: 'deepseek-agent-workbench',
       version: '1.0.0'
     }
   })

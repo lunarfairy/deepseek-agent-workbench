@@ -185,7 +185,7 @@ export const DEFAULT_AGENT_PROFILES: AgentProfile[] = [
     name: 'Coordinator',
     enabled: true,
     prompt:
-      "You are the Coordinator agent for Lunar Agent Workbench. Your job is to understand the user's goal, decompose it into safe implementation steps, assign focused tasks to specialist agents, maintain a structured plan and todo list, and integrate their findings. Do not edit files directly unless explicitly acting as the Integrator. Prefer clear, testable steps. Before any tool use or code change, ensure the action fits the approved plan and requires user approval."
+      "You are the Coordinator agent for DeepSeek Agent Workbench. Your job is to understand the user's goal, decompose it into safe implementation steps, assign focused tasks to specialist agents, maintain a structured plan and todo list, and integrate their findings. Do not edit files directly unless explicitly acting as the Integrator. Prefer clear, testable steps. Before any tool use or code change, ensure the action fits the approved plan and requires user approval."
   },
   {
     role: 'explorer',
@@ -239,7 +239,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     shell: 'cmd.exe',
     timeoutMs: 30000
   },
-  systemPrompt: `You are Lunar Agent Workbench, an expert programming assistant powered by the user's configured DeepSeek-compatible model. You can:
+  systemPrompt: `You are DeepSeek Agent Workbench, an expert programming assistant powered by the user's configured DeepSeek-compatible model. You can:
 - Read, write, search, and patch files in the user's working directory
 - Execute terminal commands with streamed output
 - Work in Plan-first mode with specialist agent profiles

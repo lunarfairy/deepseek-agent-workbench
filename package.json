@@ -1,17 +1,17 @@
 {
-  "name": "lunar-agent-workbench",
+  "name": "deepseek-agent-workbench",
   "version": "1.0.0",
-  "description": "Lunar Agent Workbench - an Electron AI coding assistant for DeepSeek-compatible workflows",
+  "description": "DeepSeek Agent Workbench - an unofficial Electron agent app for DeepSeek API users",
   "main": "./out/main/index.js",
   "author": "lunarfairy",
   "repository": {
     "type": "git",
-    "url": "https://github.com/lunarfairy/lunar-agent-workbench.git"
+    "url": "https://github.com/lunarfairy/deepseek-agent-workbench.git"
   },
   "bugs": {
-    "url": "https://github.com/lunarfairy/lunar-agent-workbench/issues"
+    "url": "https://github.com/lunarfairy/deepseek-agent-workbench/issues"
   },
-  "homepage": "https://github.com/lunarfairy/lunar-agent-workbench#readme",
+  "homepage": "https://github.com/lunarfairy/deepseek-agent-workbench#readme",
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
@@ -46,8 +46,8 @@
     "typescript": "^5.6.0"
   },
   "build": {
-    "appId": "com.lunarfairy.agentworkbench",
-    "productName": "Lunar Agent Workbench",
+    "appId": "com.lunarfairy.deepseekagentworkbench",
+    "productName": "DeepSeek Agent Workbench",
     "directories": {
       "output": "dist"
     },
@@ -70,7 +70,7 @@
       "perMachine": false,
       "allowToChangeInstallationDirectory": false,
       "deleteAppDataOnUninstall": false,
-      "artifactName": "Lunar-Agent-Workbench-Setup-${version}.exe"
+      "artifactName": "DeepSeek-Agent-Workbench-Setup-${version}.exe"
     },
     "asar": true
   }

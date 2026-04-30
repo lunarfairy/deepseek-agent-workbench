@@ -1,12 +1,13 @@
-# Lunar Agent Workbench
+# DeepSeek Agent Workbench
 
-Lunar Agent Workbench is a local Electron coding assistant built around plan-first workflows, explicit tool approval, specialist agent profiles, and MCP-style tool extension.
+DeepSeek Agent Workbench is an unofficial desktop agent app for DeepSeek API users. It aims to provide a Codex-app-like coding experience: chat with an agent, approve tool calls, inspect plans and todos, run local commands, and connect MCP tools from one Electron workbench.
 
-It is a clean-room project inspired by modern agentic coding workbenches. It is not an official DeepSeek, Anthropic, or OpenAI product.
+This is a clean-room community project. It is not an official DeepSeek, Anthropic, or OpenAI product.
 
 ## Features
 
 - Plan-first chat workflow with structured Plan, Todo, Agents, and Approvals panels.
+- DeepSeek API setup flow with model selection.
 - Default agent profiles for Coordinator, Explorer, Implementer, Reviewer, Integrator, and MCP Tool Agent.
 - Native tools for reading, writing, searching, patching files, and running commands.
 - All tool calls require user approval by default.

@@ -53,9 +53,9 @@ export function WelcomeSetup({ onComplete }: Props) {
                 <path d="M2 12l10 5 10-5" />
               </svg>
             </div>
-            <h1 className="welcome-title">Welcome to Lunar Agent Workbench</h1>
+            <h1 className="welcome-title">Welcome to DeepSeek Agent Workbench</h1>
             <p className="welcome-desc">
-              A local AI coding workbench with plan-first workflows, tool approval, MCP, and agent profiles.
+              An unofficial local agent app for DeepSeek API users with plan-first workflows, tool approval, MCP, and agent profiles.
             </p>
             <button className="welcome-next-btn" onClick={() => setStep(1)}>
               Get Started
